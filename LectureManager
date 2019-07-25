@@ -1,0 +1,159 @@
+#!/bin/bash
+################################################################################
+## This Script will be responsible for managing and maintaining the path of each
+## Course that has been added to its database. It will allow the user to browse the
+## Courses that currently exist in the database, browse the Lectures in a Course,
+## and finally give the path to a Lecture in a specific Course.
+##
+## This script should have the following capabilities:
+##
+## 1. Ability to Add Courses to the Database
+## 	- Active for adding new lecture
+## 	- Directory for searching
+## 2. Browse the Courses in the Database
+## 	- Obtain the path of a specific course
+## 3. Browse Lectures that belong to a specific course
+## 4. Obtain the Path to either
+## 	- A Specified Lecture
+## 	- The Path to a new Lecture file. Lecture(X+1).md
+## Written by: Cooper Wallace
+################################################################################
+
+## Usage Documentation
+usage () {
+	printf "Usage: lechub [options]\n"
+}
+
+# Set the Configuration File of the Program, or create one if it doesnt exist.
+getConfigFile () {
+	if [[ -e test.json ]]; then
+		CONFIG_FILE=$(< test.json)
+	fi
+}
+
+## Handler for Interactively adding a new Course into the Database
+handleAddCourse () {
+	COURSE_NAME=""
+	DIRECTORY_PATH=""
+
+	while [[ $COURSE_NAME == "" ]]; do
+		printf "Course Name: "
+		read COURSE_NAME
+	done
+
+	while [[ $DIRECTORY_PATH == "" ]]; do
+		printf "Path: "
+		read DIRECTORY_PATH
+	done
+	IFS=$tmpIFS
+	unset $tmpIFS
+
+	if [ ! -d "$DIRECTORY_PATH" ]; then
+		printf "Path does not exist.\n%s\n" "$DIRECTORY_PATH"
+		exit
+	fi
+
+	printf "Confirmation\nCourse: %s\nDirectory: %s\nCreate Course? (Yy)\n" \
+		"$COURSE_NAME" \
+		"$DIRECTORY_PATH"
+	read resp
+
+	if [[ ! "${resp,,}" == "y" ]]; then
+		printf "Aborting"
+		exit
+	fi
+
+	addCourseToDB "$COURSE_NAME" "$DIRECTORY_PATH"
+}
+
+## Add Course to Data Structure
+## Args:
+##	Course Name
+##  Directry
+addCourseToDB () {
+	COURSE="$1"
+	DIRECTORY="$2"
+
+	# Query to Add Course
+	QUERY=$(printf "jq '.Courses += {\"%s\": {\"dir\": \"%s\"}}' test.json" \
+		"$COURSE" "$DIRECTORY")
+ 	DB=$(eval $QUERY)
+
+	# DAtabase Connection
+ 	cp test.json test.json.bak
+ 	echo $DB > test.json
+}
+
+# Display the Courses that currently exist in the Database
+getCourseNames () {
+	readarray -t CourseNames < <(echo $CONFIG_FILE | jq -r ".Courses | keys[]")
+	printf "%s\n" "${CourseNames[@]}"
+
+	# readarray -t lectureDirectories < <(jq -r ".Courses" <<< $CONFIG_FILE)
+	# printf "%s\n" "${lectureDirectories[@]}"
+	# unset lectureDirectories
+}
+
+showCourseDirectory () {
+	readarray -t arr < <(echo $CONFIG_FILE | jq -r ".Courses | keys[]" )
+
+	for course in "${arr[@]}"; do
+		echo $course
+		DIR=$( jq -r ".Courses.$course" <<< $CONFIG_FILE )
+		echo "Directory $DIR"
+	done
+
+	unset arr
+}
+
+# Return the Directory that corresponds to the specified course, if it exists
+getCourseDirectory () {
+	COURSE="$1"
+	echo $(echo $CONFIG_FILE | jq -r ".Courses.""$COURSE"".dir")
+}
+
+
+# Get all subkeys
+# TEST=$(cat test.json | jq -r ".Courses | keys[]")
+
+# Read a JSON Array file into an Bash Array
+# readarray -t lectureDirectories < <(cat test.json | jq -r ".lecdir[]" )
+#
+# for t in  "${lectureDirectories[@]}"; do
+# 	echo $t
+# done
+
+#echo $TEST
+#readarray -t arr <<< $TEST
+#
+#printf "%s\n" "${arr[@]}"
+getConfigFile
+
+while [ "$1" != "" ]; do
+	case $1 in
+		-l | --list ) # List Courses that currently exist
+			shift
+			getCourseNames
+			exit
+			;;
+		-h | --help )
+			usage
+			exit
+			;;
+		-a | --add)
+			shift
+			handleAddCourse
+			exit
+			;;
+		-g | --get)
+			shift
+			getCourseDirectory "$1"
+			exit
+			;;
+		* )
+			usage
+			exit 1
+	esac
+	shift
+done
+
