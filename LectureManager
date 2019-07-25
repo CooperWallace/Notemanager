@@ -109,7 +109,9 @@ showCourseDirectory () {
 # Return the Directory that corresponds to the specified course, if it exists
 getCourseDirectory () {
 	COURSE="$1"
-	echo $(echo $CONFIG_FILE | jq -r ".Courses.""$COURSE"".dir")
+
+	# Use the jq argument to pass name
+	jq -r --arg v "$COURSE" '.Courses[$v].dir' <<< $CONFIG_FILE
 }
 
 
