@@ -19,20 +19,25 @@
 ## Written by: Cooper Wallace
 ################################################################################
 
-## Usage Documentation
-usage () {
-	printf "Usage: lechub [options]\n"
+# Show a Usage Documentation message
+usage() {
+	echo "Usage: $0 [-aglh] [-c course]"
+	echo "	-a	Add a Course"
+	echo "	-l	List Courses"
+	echo "	-g	Get Course Directory"
 }
 
 # Set the Configuration File of the Program, or create one if it doesnt exist.
-getConfigFile () {
+init_config() {
 	if [[ -e test.json ]]; then
 		CONFIG_FILE=$(< test.json)
 	fi
 }
 
-## Handler for Interactively adding a new Course into the Database
-handleAddCourse () {
+################################################################################
+
+# Handler for Interactively adding a new Course into the Database
+handleAddCourse() {
 	COURSE_NAME=""
 	DIRECTORY_PATH=""
 
@@ -45,8 +50,6 @@ handleAddCourse () {
 		printf "Path: "
 		read DIRECTORY_PATH
 	done
-	IFS=$tmpIFS
-	unset $tmpIFS
 
 	if [ ! -d "$DIRECTORY_PATH" ]; then
 		printf "Path does not exist.\n%s\n" "$DIRECTORY_PATH"
@@ -66,17 +69,18 @@ handleAddCourse () {
 	addCourseToDB "$COURSE_NAME" "$DIRECTORY_PATH"
 }
 
-## Add Course to Data Structure
-## Args:
-##	Course Name
-##  Directry
+# Add Course to Data Structure
+# Args:
+#	Course Name
+#	Directry
 addCourseToDB () {
 	COURSE="$1"
 	DIRECTORY="$2"
 
 	# Query to Add Course
 	QUERY=$(printf "jq '.Courses += {\"%s\": {\"dir\": \"%s\"}}' test.json" \
-		"$COURSE" "$DIRECTORY")
+		"$COURSE"\
+		"$DIRECTORY")
  	DB=$(eval $QUERY)
 
 	# DAtabase Connection
@@ -111,7 +115,13 @@ getCourseDirectory () {
 	COURSE="$1"
 
 	# Use the jq argument to pass name
-	jq -r --arg v "$COURSE" '.Courses[$v].dir' <<< $CONFIG_FILE
+	DIRECTORY=$(jq -r --arg v "$COURSE" '.Courses[$v].dir' <<< $CONFIG_FILE)
+
+	if [[ $DIRECTORY == "null" ]]; then
+		exit 1
+	else
+		echo $DIRECTORY
+	fi
 }
 
 
@@ -129,33 +139,29 @@ getCourseDirectory () {
 #readarray -t arr <<< $TEST
 #
 #printf "%s\n" "${arr[@]}"
-getConfigFile
 
-while [ "$1" != "" ]; do
-	case $1 in
-		-l | --list ) # List Courses that currently exist
-			shift
+################################################################################
+
+# Initialize Configuration file containing Database
+init_config
+
+while getopts ":lhg:" o; do
+	case "${o}" in
+		l)
 			getCourseNames
-			exit
 			;;
-		-h | --help )
+		h)
 			usage
-			exit
 			;;
-		-a | --add)
-			shift
-			handleAddCourse
-			exit
+		g)
+			courseName=${OPTARG}
+			getCourseDirectory "$courseName"
 			;;
-		-g | --get)
-			shift
-			getCourseDirectory "$1"
-			exit
-			;;
-		* )
+		*)
 			usage
-			exit 1
+			;;
 	esac
-	shift
 done
+
+shift $((OPTIND-1))
 
