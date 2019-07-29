@@ -1,25 +1,31 @@
 #!/bin/bash
-################################################################################
-## This Script will be responsible for managing and maintaining the path of each
-## Course that has been added to its database. It will allow the user to browse the
-## Courses that currently exist in the database, browse the Lectures in a Course,
-## and finally give the path to a Lecture in a specific Course.
-##
-## This script should have the following capabilities:
-##
-## 1. Ability to Add Courses to the Database
-## 	- Active for adding new lecture
-## 	- Directory for searching
-## 2. Browse the Courses in the Database
-## 	- Obtain the path of a specific course
-## 3. Browse Lectures that belong to a specific course
-## 4. Obtain the Path to either
-## 	- A Specified Lecture
-## 	- The Path to a new Lecture file. Lecture(X+1).md
-## Written by: Cooper Wallace
-################################################################################
+#
+# Maintains a list of Courses that are currently active on the system. Allowing
+# for the user to easily access information and file path to the specified
+# Course
+#
+# Written by: Cooper Wallace
 
-# Show a Usage Documentation message
+###############################################################################
+# This Script will be responsible for managing and maintaining the path of each
+# Course that has been added to its database. It will allow the user to browse the
+# Courses that currently exist in the database, browse the Lectures in a Course,
+# and finally give the path to a Lecture in a specific Course.
+#
+# This script should have the following capabilities:
+#
+# 1. Ability to Add Courses to the Database
+# 	- Active for adding new lecture
+# 	- Directory for searching
+# 2. Browse the Courses in the Database
+# 	- Obtain the path of a specific course
+# 3. Browse Lectures that belong to a specific course
+# 4. Obtain the Path to either
+# 	- A Specified Lecture
+# 	- The Path to a new Lecture file. Lecture(X+1).md
+###############################################################################
+
+# Display the Usage Documentation message
 usage() {
 	echo "Usage: $0 [-aglh] [-c course]"
 	echo "	-a	Add a Course"
@@ -28,9 +34,23 @@ usage() {
 }
 
 # Set the Configuration File of the Program, or create one if it doesnt exist.
+# Globals:
+#	CONFIG_PATH	- Contains the path to the config file
+#	CONFIG_FILE	- Contains the contents of the Config file
 init_config() {
-	if [[ -e test.json ]]; then
-		CONFIG_FILE=$(< test.json)
+	CONFIG_PATH="test.json"
+
+	if [[ -e "$CONFIG_PATH" ]]; then
+		CONFIG_FILE=$(< "$CONFIG_PATH")
+	else
+		echo "Generating new config"
+		CONFIG_FILE=""
+	fi
+
+	# Setup basic JSON for empty file
+	if [[ $CONFIG_FILE == "" ]]; then
+		echo "Config empty, Generating new"
+		echo "{\"Courses\":{}}" > $CONFIG_PATH
 	fi
 }
 
@@ -67,6 +87,9 @@ handleAddCourse() {
 	fi
 
 	addCourseToDB "$COURSE_NAME" "$DIRECTORY_PATH"
+
+	unset COURSE_NAME
+	unset DIRECTORY_PATH
 }
 
 # Add Course to Data Structure
@@ -79,7 +102,7 @@ addCourseToDB () {
 
 	# Query to Add Course
 	QUERY=$(printf "jq '.Courses += {\"%s\": {\"dir\": \"%s\"}}' test.json" \
-		"$COURSE"\
+		"$COURSE" \
 		"$DIRECTORY")
  	DB=$(eval $QUERY)
 
@@ -89,15 +112,12 @@ addCourseToDB () {
 }
 
 # Display the Courses that currently exist in the Database
-getCourseNames () {
+getCourses () {
 	readarray -t CourseNames < <(echo $CONFIG_FILE | jq -r ".Courses | keys[]")
 	printf "%s\n" "${CourseNames[@]}"
-
-	# readarray -t lectureDirectories < <(jq -r ".Courses" <<< $CONFIG_FILE)
-	# printf "%s\n" "${lectureDirectories[@]}"
-	# unset lectureDirectories
 }
 
+# Display the list of Courses that exist and their path
 showCourseDirectory () {
 	readarray -t arr < <(echo $CONFIG_FILE | jq -r ".Courses | keys[]" )
 
@@ -110,11 +130,19 @@ showCourseDirectory () {
 	unset arr
 }
 
-# Return the Directory that corresponds to the specified course, if it exists
+# Return the Directory that corresponds to the specified Course, if it exists
+# Exits on failure, returning 1
+# Argument:
+#	Course - Name of Course to search
+# Returns:
+#	$DIRECTORY - Path to the specified course
 getCourseDirectory () {
 	COURSE="$1"
+	if [[ -z $COURSE ]]; then
+		exit 1
+	fi
 
-	# Use the jq argument to pass name
+
 	DIRECTORY=$(jq -r --arg v "$COURSE" '.Courses[$v].dir' <<< $CONFIG_FILE)
 
 	if [[ $DIRECTORY == "null" ]]; then
@@ -122,8 +150,19 @@ getCourseDirectory () {
 	else
 		echo $DIRECTORY
 	fi
+
+	unset $COURSE
 }
 
+# Outputs a list of Lectures that belongs to the specified Course if it exists
+# Arguments: Course Name
+#
+getCourseLectures () {
+	COURSE="$1"
+	getCourseDirectory "$COURSE"
+
+	ls "$DIRECTORY" | grep "Lecture" | sort --version-sort
+}
 
 # Get all subkeys
 # TEST=$(cat test.json | jq -r ".Courses | keys[]")
@@ -145,17 +184,24 @@ getCourseDirectory () {
 # Initialize Configuration file containing Database
 init_config
 
-while getopts ":lhg:" o; do
+while getopts ":lahg:c:" o; do
 	case "${o}" in
 		l)
-			getCourseNames
+			getCourses
 			;;
 		h)
 			usage
 			;;
+		a)
+			handleAddCourse
+			;;
 		g)
 			courseName=${OPTARG}
 			getCourseDirectory "$courseName"
+			;;
+		c)
+			courseName=${OPTARG}
+			getCourseLectures "$courseName"
 			;;
 		*)
 			usage
