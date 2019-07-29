@@ -114,6 +114,13 @@ addCourseToDB () {
 # Display the Courses that currently exist in the Database
 getCourses () {
 	readarray -t CourseNames < <(echo $CONFIG_FILE | jq -r ".Courses | keys[]")
+
+	if (( ${#CourseNames[@]} == 0 )); then
+		echo "No Courses currently exist in the database."
+		echo "You may add one by using -a option"
+		exit
+	fi
+
 	printf "%s\n" "${CourseNames[@]}"
 }
 
@@ -138,10 +145,10 @@ showCourseDirectory () {
 #	$DIRECTORY - Path to the specified course
 getCourseDirectory () {
 	COURSE="$1"
-	if [[ -z $COURSE ]]; then
+	if [[ -z $COURSE ]] || [[ "$COURSE" == "" ]]; then
+		echo "No Course specified"
 		exit 1
 	fi
-
 
 	DIRECTORY=$(jq -r --arg v "$COURSE" '.Courses[$v].dir' <<< $CONFIG_FILE)
 
