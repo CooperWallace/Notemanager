@@ -57,7 +57,7 @@ init_config() {
 ################################################################################
 
 # Handler for Interactively adding a new Course into the Database
-handleAddCourse() {
+handle_add_course() {
 	COURSE_NAME=""
 	DIRECTORY_PATH=""
 
@@ -96,7 +96,7 @@ handleAddCourse() {
 # Args:
 #	Course Name
 #	Directry
-addCourseToDB () {
+add_course_to_db() {
 	COURSE="$1"
 	DIRECTORY="$2"
 
@@ -112,7 +112,7 @@ addCourseToDB () {
 }
 
 # Display the Courses that currently exist in the Database
-getCourses () {
+get_courses () {
 	readarray -t CourseNames < <(echo $CONFIG_FILE | jq -r ".Courses | keys[]")
 
 	if (( ${#CourseNames[@]} == 0 )); then
@@ -125,7 +125,7 @@ getCourses () {
 }
 
 # Display the list of Courses that exist and their path
-showCourseDirectory () {
+show_course_directory () {
 	readarray -t arr < <(echo $CONFIG_FILE | jq -r ".Courses | keys[]" )
 
 	for course in "${arr[@]}"; do
@@ -142,8 +142,8 @@ showCourseDirectory () {
 # Argument:
 #	Course - Name of Course to search
 # Returns:
-#	$DIRECTORY - Path to the specified course
-getCourseDirectory () {
+#	DIRECTORY - Path to the specified course
+get_course_directory () {
 	COURSE="$1"
 	if [[ -z $COURSE ]] || [[ "$COURSE" == "" ]]; then
 		echo "No Course specified"
@@ -164,7 +164,7 @@ getCourseDirectory () {
 # Outputs a list of Lectures that belongs to the specified Course if it exists
 # Arguments: Course Name
 #
-getCourseLectures () {
+get_course_lectures () {
 	COURSE="$1"
 	getCourseDirectory "$COURSE"
 
@@ -194,21 +194,21 @@ init_config
 while getopts ":lahg:c:" o; do
 	case "${o}" in
 		l)
-			getCourses
+			get_courses
 			;;
 		h)
 			usage
 			;;
 		a)
-			handleAddCourse
+			handle_add_course
 			;;
 		g)
 			courseName=${OPTARG}
-			getCourseDirectory "$courseName"
+			get_course_directory "$courseName"
 			;;
 		c)
 			courseName=${OPTARG}
-			getCourseLectures "$courseName"
+			get_course_lectures "$courseName"
 			;;
 		*)
 			usage
