@@ -33,24 +33,25 @@ usage() {
 	echo "	-g	Get Course Directory"
 }
 
-# Set the Configuration File of the Program, or create one if it doesnt exist.
+# Set the Database file for the Program, or create one if it doesnt exist.
+#	The Database shall contain all information regarding courses
 # Globals:
-#	CONFIG_PATH	- Contains the path to the config file
-#	CONFIG_FILE	- Contains the contents of the Config file
-init_config() {
-	CONFIG_PATH="test.json"
+#	DB_PATH	- Contains the path to the config file
+#	DB_FILE	- Contains the contents of the Config file
+init_db() {
+	DB_PATH="test.json"
 
-	if [[ -e "$CONFIG_PATH" ]]; then
-		CONFIG_FILE=$(< "$CONFIG_PATH")
+	if [[ -e "$DB_PATH" ]]; then
+		DB_FILE=$(< "$DB_PATH")
 	else
 		echo "Generating new config"
-		CONFIG_FILE=""
+		DB_FILE=""
 	fi
 
 	# Setup basic JSON for empty file
-	if [[ $CONFIG_FILE == "" ]]; then
+	if [[ $DB_FILE == "" ]]; then
 		echo "Config empty, Generating new"
-		echo "{\"Courses\":{}}" > $CONFIG_PATH
+		echo "{\"Courses\":{}}" > $DB_PATH
 	fi
 }
 
@@ -111,13 +112,13 @@ add_course_to_db() {
  	DB=$(eval $QUERY)
 
 	# DAtabase Connection
-	cp "$CONFIG_PATH" "${CONFIG_PATH}.bak"
- 	echo $DB > "$CONFIG_PATH"
+	cp "$DB_PATH" "${DB_PATH}.bak"
+ 	echo $DB > "$DB_PATH"
 }
 
 # Display the Courses that currently exist in the Database
 get_courses () {
-	readarray -t CourseNames < <(echo $CONFIG_FILE | jq -r ".Courses | keys[]")
+	readarray -t CourseNames < <(echo $DB_FILE | jq -r ".Courses | keys[]")
 
 	if (( ${#CourseNames[@]} == 0 )); then
 		echo "No Courses currently exist in the database."
@@ -130,11 +131,11 @@ get_courses () {
 
 # Display the list of Courses that exist and their path
 show_course_directory () {
-	readarray -t arr < <(echo $CONFIG_FILE | jq -r ".Courses | keys[]" )
+	readarray -t arr < <(echo $DB_FILE | jq -r ".Courses | keys[]" )
 
 	for course in "${arr[@]}"; do
 		echo $course
-		DIR=$( jq -r ".Courses.$course" <<< $CONFIG_FILE )
+		DIR=$( jq -r ".Courses.$course" <<< $DB_FILE )
 		echo "Directory $DIR"
 	done
 
@@ -154,7 +155,7 @@ get_course_directory () {
 		exit 1
 	fi
 
-	DIRECTORY=$(jq -r --arg v "$COURSE" '.Courses[$v].dir' <<< $CONFIG_FILE)
+	DIRECTORY=$(jq -r --arg v "$COURSE" '.Courses[$v].dir' <<< $DB_FILE)
 
 	if [[ $DIRECTORY == "null" ]]; then
 		exit 1
@@ -185,7 +186,7 @@ exists_course () {
 	local QUERY=$(printf "jq -e '.[] | select( .| has(\"%s\"))'" $COURSE_NAME)
 
 	local EXISTS
-	EXISTS=$(eval $QUERY <<< $CONFIG_FILE)
+	EXISTS=$(eval $QUERY <<< $DB_FILE)
 
 	if [[ $? == 0 ]]; then
 		return 0
@@ -212,7 +213,7 @@ exists_course () {
 ################################################################################
 
 # Initialize Configuration file containing Database
-init_config
+init_db
 
 while getopts ":lahg:c:e:" o; do
 	case "${o}" in
