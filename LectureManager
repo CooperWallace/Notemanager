@@ -58,13 +58,20 @@ init_config() {
 
 # Handler for Interactively adding a new Course into the Database
 handle_add_course() {
-	COURSE_NAME=""
-	DIRECTORY_PATH=""
+	local COURSE_NAME=""
+	local DIRECTORY_PATH=""
 
 	while [[ $COURSE_NAME == "" ]]; do
 		printf "Course Name: "
 		read COURSE_NAME
 	done
+
+	exists_course "$COURSE_NAME"
+
+	if [[ $? ]]; then
+		echo "A Course by that name already exists."
+		exit 1
+	fi
 
 	while [[ $DIRECTORY_PATH == "" ]]; do
 		printf "Path: "
@@ -86,29 +93,26 @@ handle_add_course() {
 		exit
 	fi
 
-	addCourseToDB "$COURSE_NAME" "$DIRECTORY_PATH"
-
-	unset COURSE_NAME
-	unset DIRECTORY_PATH
+	add_course_to_db "$COURSE_NAME" "$DIRECTORY_PATH"
 }
 
 # Add Course to Data Structure
 # Args:
-#	Course Name
+#	1 Course Name
 #	Directry
 add_course_to_db() {
-	COURSE="$1"
-	DIRECTORY="$2"
+	local COURSE_NAME="$1"
+	local DIRECTORY_PATH="$2"
 
 	# Query to Add Course
 	QUERY=$(printf "jq '.Courses += {\"%s\": {\"dir\": \"%s\"}}' test.json" \
-		"$COURSE" \
-		"$DIRECTORY")
+		"$COURSE_NAME" \
+		"$DIRECTORY_PATH")
  	DB=$(eval $QUERY)
 
 	# DAtabase Connection
- 	cp test.json test.json.bak
- 	echo $DB > test.json
+	cp "$CONFIG_PATH" "${CONFIG_PATH}.bak"
+ 	echo $DB > "$CONFIG_PATH"
 }
 
 # Display the Courses that currently exist in the Database
@@ -171,6 +175,25 @@ get_course_lectures () {
 	ls "$DIRECTORY" | grep "Lecture" | sort --version-sort
 }
 
+# Determines if a Course with the specified name currently exists in the
+# database
+#	Arguments: Course name
+#	Returns: 0 if course exists, otherwise 1
+exists_course () {
+	local COURSE_NAME="$1"
+
+	local QUERY=$(printf "jq -e '.[] | select( .| has(\"%s\"))'" $COURSE_NAME)
+
+	local EXISTS
+	EXISTS=$(eval $QUERY <<< $CONFIG_FILE)
+
+	if [[ $? == 0 ]]; then
+		return 0
+	fi
+
+	return 1
+}
+
 # Get all subkeys
 # TEST=$(cat test.json | jq -r ".Courses | keys[]")
 
@@ -191,7 +214,7 @@ get_course_lectures () {
 # Initialize Configuration file containing Database
 init_config
 
-while getopts ":lahg:c:" o; do
+while getopts ":lahg:c:e:" o; do
 	case "${o}" in
 		l)
 			get_courses
@@ -201,6 +224,11 @@ while getopts ":lahg:c:" o; do
 			;;
 		a)
 			handle_add_course
+			;;
+		e)
+			courseName=${OPTARG}
+			exists_course $courseName
+			echo $?
 			;;
 		g)
 			courseName=${OPTARG}
