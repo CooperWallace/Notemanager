@@ -29,7 +29,7 @@
 usage() {
 	echo -n "Usage: $0 [-aglh] [-c course]
 
-Help maintain and manage Notes for specified courses on the Users system.
+Help maintain and manage Notes for the specified courses on the Users system.
 
  Options:
   -h	Display usage message
