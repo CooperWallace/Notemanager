@@ -46,13 +46,13 @@ Help maintain and manage Notes for specified courses on the Users system.
 # Set the Database file for the Program, or create one if it doesnt exist.
 #	The Database shall contain all information regarding courses
 # Globals:
-#	DB_PATH	- Contains the path to the config file
-#	DB_FILE	- Contains the contents of the Config file
+#	DB_PATH	- READONLY Contains the path to the config file
+#	DB_FILE	- READONLY Contains the contents of the Config file
 init_db() {
-	DB_PATH="test.json"
+	readonly DB_PATH="test.json"
 
 	if [[ -e "$DB_PATH" ]]; then
-		DB_FILE=$(< "$DB_PATH")
+		readonly DB_FILE=$(< "$DB_PATH")
 	else
 		echo "Generating new config"
 		DB_FILE=""
@@ -62,6 +62,7 @@ init_db() {
 	if [[ $DB_FILE == "" ]]; then
 		echo "Config empty, Generating new"
 		echo "{\"Courses\":{}}" | jq > $DB_PATH
+		readonly DB_FILE=$(< "$DB_PATH")
 	fi
 }
 
