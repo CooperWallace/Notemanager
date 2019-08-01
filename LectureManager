@@ -89,9 +89,11 @@ add_course_to_db() {
 	local DIRECTORY_PATH="$2"
 
 	# Database query to Add Course
-	QUERY=$(printf "jq '.Courses += {\"%s\": {\"dir\": \"%s\"}}' test.json" \
+	QUERY=$(printf \
+		"jq '.Courses += {\"%s\": {\"dir\": \"%s\"}}' test.json" \
 		"$COURSE_NAME" \
-		"$DIRECTORY_PATH")
+		"$DIRECTORY_PATH" \
+	)
 
  	DB=$(eval $QUERY)
 
@@ -142,34 +144,49 @@ get_courses () {
 
 # Handler for Interactively adding a new Course into the Database
 handle_add_course() {
-	local COURSE_NAME=""
+	local COURSE_NAME
 	local DIRECTORY_PATH=""
 
-	while [[ $COURSE_NAME == "" ]]; do
+	# Read until a valid course name is provided
+	while [[ 1 ]]; do
 		printf "Course Name: "
 		read COURSE_NAME
+
+		if [[ ! "${COURSE_NAME}" =~ ^[[:alnum:]]*$ ]]; then
+			echo "Only characters A-Za-z0-9 are allowed in the Course Name"
+			continue
+		fi
+
+		course_exists "$COURSE_NAME"
+
+		if [[ $? == 0 ]]; then
+			echo "A Course by that name already exists."
+			echo "Please provide a different course name" \
+				"or remove the invalid entry."
+			continue
+		fi
+
+		break
+
 	done
 
-	course_exists "$COURSE_NAME"
-
-	if [[ $? == 0 ]]; then
-		echo "A Course by that name already exists."
-		exit 1
-	fi
-
-	while [[ $DIRECTORY_PATH == "" ]]; do
+	# Read until valid directory path is provided
+	while [[ 1 ]]; do
 		printf "Path: "
 		read DIRECTORY_PATH
+
+		if [[ ! -d "$DIRECTORY_PATH" ]]; then
+			printf "The following path does not exist:\n%s\n" "$DIRECTORY_PATH"
+			continue
+		fi
+
+		break
 	done
 
-	if [ ! -d "$DIRECTORY_PATH" ]; then
-		printf "Path does not exist.\n%s\n" "$DIRECTORY_PATH"
-		exit
-	fi
-
-	printf "Confirmation\nCourse: %s\nDirectory: %s\nCreate Course? (Yy)\n" \
+	printf "\n------\nConfirmation\nCourse: %s\nDirectory: %s\n" \
 		"$COURSE_NAME" \
 		"$DIRECTORY_PATH"
+	printf "Create Course? (Yy): "
 	read resp
 
 	if [[ ! "${resp,,}" == "y" ]]; then
@@ -178,6 +195,10 @@ handle_add_course() {
 	fi
 
 	add_course_to_db "$COURSE_NAME" "$DIRECTORY_PATH"
+
+	if [[ $? == 0 ]]; then
+		printf "Course \"%s\" successfully created." "$COURSE_NAME"
+	fi
 }
 
 # Outputs a list of Lectures that belongs to the specified Course if it exists
@@ -234,4 +255,3 @@ while getopts ":lahg:c:e:" o; do
 done
 
 shift $((OPTIND-1))
-
