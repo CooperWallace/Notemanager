@@ -61,7 +61,7 @@ init_db() {
 	# Setup basic JSON for empty file
 	if [[ $DB_FILE == "" ]]; then
 		echo "Config empty, Generating new"
-		echo "{\"Courses\":{}}" | jq > $DB_PATH
+		( echo "{\"Courses\":{}}" | jq ".") > $DB_PATH
 		readonly DB_FILE=$(< "$DB_PATH")
 	fi
 }
