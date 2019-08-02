@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+#
+# Library functions to be used for notemgr and its sub-commands
+
+
+################################################################################
+# Course management Database functions
+# 	Functions dedicated to parsing and interacting with the Course Database
+
+# Set the Database file for the Program, or create one if it doesnt exist.
+#	The Database shall contain all information regarding courses
+# Globals:
+#	DB_PATH	- READONLY Contains the path to the config file
+#	DB_FILE	- READONLY Contains the contents of the Config file
+init_db() {
+	readonly DB_PATH="test.json"
+
+	if [[ -e "$DB_PATH" ]]; then
+		DB_FILE=$(< "$DB_PATH")
+	else
+		echo "Generating new config"
+		DB_FILE=""
+	fi
+
+	# Setup basic JSON for empty file
+	if [[ $DB_FILE == "" ]]; then
+		echo "Config empty, Generating new"
+		( echo "{\"Courses\":{}}" | jq ".") > $DB_PATH
+		readonly DB_FILE=$(< "$DB_PATH")
+	fi
+}
+
+# Determines if a Course with the specified name currently exists in the
+# database
+# Arguments:
+#		Course name
+# Returns:
+#		0 if the Course exists, otherwise non-zero
+course_exists () {
+	local COURSE_NAME="$1"
+	local QUERY=$(printf "jq -e '.[] | select( .| has(\"%s\"))'" $COURSE_NAME)
+
+	( eval $QUERY <<< $DB_FILE > /dev/null )
+	return $?
+}
+
+# Add Course to Data Structure
+# Arguments:
+#	Course Name
+#	Directry
+add_course_to_db() {
+	local COURSE_NAME="$1"
+	local DIRECTORY_PATH="$2"
+
+	# Database query to Add Course
+	QUERY=$(printf \
+		"jq '.Courses += {\"%s\": {\"dir\": \"%s\"}}' test.json" \
+		"$COURSE_NAME" \
+		"$DIRECTORY_PATH" \
+	)
+
+ 	DB=$(eval $QUERY)
+
+	cp "$DB_PATH" "${DB_PATH}.bak"
+ 	echo $DB > "$DB_PATH"
+}
+
+# Return the Directory that corresponds to the specified Course, if it exists
+#
+# GLOBAL:
+#	DIRECTORY - Path to the specified course
+# Arguments:
+#	Course - Name of Course to search
+# Returns:
+#	0 on success, otherwise non-zero
+get_course_directory () {
+	local COURSE="$1"
+
+	# Determine if a course was specified
+	if [[ -z $COURSE ]] || [[ "$COURSE" == "" ]]; then
+		echo "No Course specified"
+		exit 1
+	fi
+
+	DIRECTORY=$(jq -r --arg v "$COURSE" '.Courses[$v].dir' <<< $DB_FILE)
+
+	if [[ $DIRECTORY == "null" ]]; then
+		return 1
+	fi
+
+}
+
+# Display the Courses that currently exist in the Database
+get_courses () {
+	readarray -t CourseNames < <(echo $DB_FILE | jq -r ".Courses | keys[]")
+
+	if (( ${#CourseNames[@]} == 0 )); then
+		echo "No Courses currently exist in the database."
+		echo "You may add one by using -a option"
+		exit
+	fi
+
+	printf "%s\n" "${CourseNames[@]}"
+	unset CourseNames
+}
+
+

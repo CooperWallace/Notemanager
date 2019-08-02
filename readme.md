@@ -25,6 +25,8 @@ specific courses.
 used by `notemgr`.
 
 - Allow for editing variables to be used with courses
+- (?) Archiving of Course straight to tar
+- (?) Archiving of compiled pdf straight to tar
 
 `notemgr-compile` - Used to compile notes for a course
 

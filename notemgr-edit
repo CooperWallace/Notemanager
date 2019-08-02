@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+#
+# Creating and Managing the Courses that exist within notemgr
+#
+# Written by: Cooper Wallace
+
+################################################################################
+
+# Display the Usage Documentation message
+usage() {
+	echo -n "Usage: $0 [OPTIONS] Course
+
+Help maintain and manage Courses in the notemgr database.
+
+ Options:
+  -h	Display usage message
+  -c	Create a Course entry
+TODO:  -c [Course] [Path]	Create a Course entry
+TODO:  -a	Archive the specified course
+"
+}
+
+# Handler for Interactively adding a new Course into the Database
+handle_create_course() {
+	local COURSE_NAME=
+	local DIRECTORY_PATH=""
+
+	# Read until a valid course name is provided
+	while [[ 1 ]]; do
+		read -p "Course name: " COURSE_NAME
+
+		if [[ ! "${COURSE_NAME}" =~ ^[[:alnum:]]*$ ]]; then
+			echo "Only characters A-Za-z0-9 are allowed in the Course Name"
+			continue
+		fi
+
+		course_exists "$COURSE_NAME"
+
+		if [[ $? == 0 ]]; then
+			echo "A Course by that name already exists."
+			echo "Please provide a different course name" \
+				"or remove the invalid entry."
+			continue
+		fi
+
+		break
+
+	done
+
+	# Read until valid directory path is provided
+	while [[ 1 ]]; do
+		printf "Path: "
+		read DIRECTORY_PATH
+
+		if [[ ! -d "$DIRECTORY_PATH" ]]; then
+			printf "The following path does not exist:\n%s\n" "$DIRECTORY_PATH"
+			continue
+		fi
+
+		break
+	done
+
+	printf "\n------\nConfirmation\nCourse: %s\nDirectory: %s\n" \
+		"$COURSE_NAME" \
+		"$DIRECTORY_PATH"
+	printf "Create Course? (Yy): "
+	read resp
+
+	if [[ ! "${resp,,}" == "y" ]]; then
+		printf "Aborting"
+		exit
+	fi
+
+	add_course_to_db "$COURSE_NAME" "$DIRECTORY_PATH"
+
+	if [[ $? == 0 ]]; then
+		printf "Course \"%s\" successfully created." "$COURSE_NAME"
+	fi
+}
+
+################################################################################
+
+# Loading Library for shared functions contained in 'notemgr-lib'
+SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
+LIB_PATH="${SCRIPT_PATH}/notemgr-lib"
+
+if [[ -f "${LIB_PATH}" ]]; then
+	source "${LIB_PATH}"
+else
+	echo "Couldn't find the notemgr library file."
+	echo "Please find it and add it to the same folder as this script."
+	echo "Exitting..."
+	exit 1
+fi
+
+# Initialize Configuration file containing Database
+init_db
+
+while getopts "c" o; do
+	case "${o}" in
+		c)
+			handle_create_course
+			;;
+		*)
+			usage
+			;;
+	esac
+done

@@ -27,179 +27,20 @@
 
 # Display the Usage Documentation message
 usage() {
-	echo -n "Usage: $0 [-aglh] [-c course]
+	echo -n "Usage: $0 [OPTIONS] Course
 
 Help maintain and manage Notes for the specified courses on the Users system.
 
  Options:
   -h	Display usage message
-  -a	Add a Course
   -l	List Courses
-  -g	Get Course Directory
+  -L	List Courses with more information
+  -s Course 	List Notes for the specified course
+  -c Course 	Create a new Lecture in the course
+  -g Course 	Get Course Directory
 "
 }
-
 ################################################################################
-# Course management Database functions
-# 	Functions dedicated to parsing and interacting with the Course Database
-
-# Set the Database file for the Program, or create one if it doesnt exist.
-#	The Database shall contain all information regarding courses
-# Globals:
-#	DB_PATH	- READONLY Contains the path to the config file
-#	DB_FILE	- READONLY Contains the contents of the Config file
-init_db() {
-	readonly DB_PATH="test.json"
-
-	if [[ -e "$DB_PATH" ]]; then
-		readonly DB_FILE=$(< "$DB_PATH")
-	else
-		echo "Generating new config"
-		DB_FILE=""
-	fi
-
-	# Setup basic JSON for empty file
-	if [[ $DB_FILE == "" ]]; then
-		echo "Config empty, Generating new"
-		( echo "{\"Courses\":{}}" | jq ".") > $DB_PATH
-		readonly DB_FILE=$(< "$DB_PATH")
-	fi
-}
-
-# Determines if a Course with the specified name currently exists in the
-# database
-# Arguments:
-#		Course name
-# Returns:
-#		0 if the Course exists, otherwise non-zero
-course_exists () {
-	local COURSE_NAME="$1"
-	local QUERY=$(printf "jq -e '.[] | select( .| has(\"%s\"))'" $COURSE_NAME)
-
-	( eval $QUERY <<< $DB_FILE > /dev/null )
-	return $?
-}
-
-# Add Course to Data Structure
-# Arguments:
-#	Course Name
-#	Directry
-add_course_to_db() {
-	local COURSE_NAME="$1"
-	local DIRECTORY_PATH="$2"
-
-	# Database query to Add Course
-	QUERY=$(printf \
-		"jq '.Courses += {\"%s\": {\"dir\": \"%s\"}}' test.json" \
-		"$COURSE_NAME" \
-		"$DIRECTORY_PATH" \
-	)
-
- 	DB=$(eval $QUERY)
-
-	cp "$DB_PATH" "${DB_PATH}.bak"
- 	echo $DB > "$DB_PATH"
-}
-
-# Return the Directory that corresponds to the specified Course, if it exists
-#
-# GLOBAL:
-#	DIRECTORY - Path to the specified course
-# Arguments:
-#	Course - Name of Course to search
-# Returns:
-#	0 on success, otherwise non-zero
-get_course_directory () {
-	local COURSE
-	COURSE="$1"
-
-	# Determine if a course was specified
-	if [[ -z $COURSE ]] || [[ "$COURSE" == "" ]]; then
-		echo "No Course specified"
-		exit 1
-	fi
-
-	DIRECTORY=$(jq -r --arg v "$COURSE" '.Courses[$v].dir' <<< $DB_FILE)
-
-	if [[ $DIRECTORY == "null" ]]; then
-		return 1
-	fi
-
-}
-
-# Display the Courses that currently exist in the Database
-get_courses () {
-	readarray -t CourseNames < <(echo $DB_FILE | jq -r ".Courses | keys[]")
-
-	if (( ${#CourseNames[@]} == 0 )); then
-		echo "No Courses currently exist in the database."
-		echo "You may add one by using -a option"
-		exit
-	fi
-
-	printf "%s\n" "${CourseNames[@]}"
-}
-
-################################################################################
-
-# Handler for Interactively adding a new Course into the Database
-handle_add_course() {
-	local COURSE_NAME
-	local DIRECTORY_PATH=""
-
-	# Read until a valid course name is provided
-	while [[ 1 ]]; do
-		printf "Course Name: "
-		read COURSE_NAME
-
-		if [[ ! "${COURSE_NAME}" =~ ^[[:alnum:]]*$ ]]; then
-			echo "Only characters A-Za-z0-9 are allowed in the Course Name"
-			continue
-		fi
-
-		course_exists "$COURSE_NAME"
-
-		if [[ $? == 0 ]]; then
-			echo "A Course by that name already exists."
-			echo "Please provide a different course name" \
-				"or remove the invalid entry."
-			continue
-		fi
-
-		break
-
-	done
-
-	# Read until valid directory path is provided
-	while [[ 1 ]]; do
-		printf "Path: "
-		read DIRECTORY_PATH
-
-		if [[ ! -d "$DIRECTORY_PATH" ]]; then
-			printf "The following path does not exist:\n%s\n" "$DIRECTORY_PATH"
-			continue
-		fi
-
-		break
-	done
-
-	printf "\n------\nConfirmation\nCourse: %s\nDirectory: %s\n" \
-		"$COURSE_NAME" \
-		"$DIRECTORY_PATH"
-	printf "Create Course? (Yy): "
-	read resp
-
-	if [[ ! "${resp,,}" == "y" ]]; then
-		printf "Aborting"
-		exit
-	fi
-
-	add_course_to_db "$COURSE_NAME" "$DIRECTORY_PATH"
-
-	if [[ $? == 0 ]]; then
-		printf "Course \"%s\" successfully created." "$COURSE_NAME"
-	fi
-}
 
 # Outputs a list of Lectures that belongs to the specified Course if it exists
 # Arguments:
@@ -221,32 +62,43 @@ get_course_lectures () {
 
 ################################################################################
 
+# Loading Library for shared functions contained in 'notemgr-lib'
+SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
+LIB_PATH="${SCRIPT_PATH}/notemgr-lib"
+
+if [[ -f "${LIB_PATH}" ]]; then
+	source "${LIB_PATH}"
+else
+	echo "Couldn't find the notemgr library file."
+	echo "Please find it and add it to the same folder as this script."
+	echo "Exitting..."
+	exit 1
+fi
+
 # Initialize Configuration file containing Database
 init_db
 
-while getopts ":lahg:c:e:" o; do
+while getopts "hlLg:s:c:" o; do
 	case "${o}" in
 		l)
 			get_courses
 			;;
-		h)
-			usage
-			;;
-		a)
-			handle_add_course
+		g)
+			courseName=${OPTARG}
+			get_course_directory "$courseName"
+			echo "$DIRECTORY"
 			;;
 		e)
 			courseName=${OPTARG}
 			course_exists $courseName
 			echo $?
 			;;
-		g)
-			courseName=${OPTARG}
-			get_course_directory "$courseName"
-			;;
 		c)
 			courseName=${OPTARG}
 			get_course_lectures "$courseName"
+			;;
+		h)
+			usage
 			;;
 		*)
 			usage
@@ -255,3 +107,10 @@ while getopts ":lahg:c:e:" o; do
 done
 
 shift $((OPTIND-1))
+
+# Default option when no arguments are specified
+if [[ $OPTIND -eq 1 ]] && [[ $# == 0 ]]; then
+	usage
+	exit
+fi
+
