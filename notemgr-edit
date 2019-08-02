@@ -67,8 +67,7 @@ handle_create_course() {
 	printf "\n------\nConfirmation\nCourse: %s\nDirectory: %s\n" \
 		"$COURSE_NAME" \
 		"$DIRECTORY_PATH"
-	printf "Create Course? (Yy): "
-	read resp
+	read -p "Create Course? (Yy): " resp
 
 	if [[ ! "${resp,,}" == "y" ]]; then
 		printf "Aborting"

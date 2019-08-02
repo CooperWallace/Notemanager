@@ -114,7 +114,7 @@ get_courses () {
 is_course_archived () {
 	local COURSE_NAME="$1"
 
-	QUERY=`jq --arg v "$COURSE_NAME" '.Courses[$v].archived' <<< $DB_FILE`
+	QUERY=`jq -r --arg v "$COURSE_NAME" '.Courses[$v].archived' <<< $DB_FILE`
 
 	[[ "$QUERY" == "true" ]] && return 0 || return 1
 }

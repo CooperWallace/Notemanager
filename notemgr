@@ -70,11 +70,19 @@ get_course_lectures () {
 	ls "$DIRECTORY" | grep "Lecture" | sort --version-sort
 }
 
-# Create a new Lecture file, and return the path
+# Determine the file name of the new Lecture in the specified course
 # Arguments:
 #	Course Name
 create_course_lecture () {
 	local COURSE_NAME="$1"
+
+	is_course_archived "$COURSE_NAME"
+
+	if [[ $? == 0 ]]; then
+		echo -n "The course $COURSE_NAME has been archived."
+		echo " New lectures cannot be added to it."
+		exit 1
+	fi
 
 	# Obtain the number of Lectures that currently exist
 	local LECTURE_NUM=$(get_course_lectures "$COURSE_NAME" | wc -l )
