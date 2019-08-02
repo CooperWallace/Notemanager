@@ -54,15 +54,13 @@ add_course_to_db() {
 
 	# Database query to Add Course
 	QUERY=$(printf \
-		"jq '.Courses += {\"%s\": {\"dir\": \"%s\"}}' test.json" \
+		"jq '.Courses += {\"%s\": {\"dir\": \"%s\"}}' %s" \
 		"$COURSE_NAME" \
 		"$DIRECTORY_PATH" \
+		"$DB_PATH" \
 	)
 
- 	DB=$(eval $QUERY)
-
-	cp "$DB_PATH" "${DB_PATH}.bak"
- 	echo $DB > "$DB_PATH"
+	echo "$(eval $QUERY)" > "$DB_PATH"
 }
 
 # Return the Directory that corresponds to the specified Course, if it exists
@@ -78,7 +76,7 @@ get_course_directory () {
 
 	# Determine if a course was specified
 	if [[ -z $COURSE ]] || [[ "$COURSE" == "" ]]; then
-		echo "No Course specified"
+		echo "get_course_directory: No Course specified"
 		exit 1
 	fi
 
@@ -88,6 +86,8 @@ get_course_directory () {
 		return 1
 	fi
 
+	# Add / if DIRECTORY doesnt end in one
+	[[ "${DIRECTORY}" != */ ]] && DIRECTORY="$DIRECTORY/"
 }
 
 # Display the Courses that currently exist in the Database

@@ -16,20 +16,24 @@ Help maintain and manage Courses in the notemgr database.
   -h	Display usage message
   -c	Create a Course entry
 TODO:  -c [Course] [Path]	Create a Course entry
-TODO:  -a	Archive the specified course
+TODO:  -a [Course]	Archive the specified course
 "
 }
 
 # Handler for Interactively adding a new Course into the Database
 handle_create_course() {
-	local COURSE_NAME=
+	local COURSE_NAME=""
 	local DIRECTORY_PATH=""
 
 	# Read until a valid course name is provided
 	while [[ 1 ]]; do
 		read -p "Course name: " COURSE_NAME
 
-		if [[ ! "${COURSE_NAME}" =~ ^[[:alnum:]]*$ ]]; then
+		if [[ "$COURSE_NAME" == "" ]]; then
+			echo "Course name cannot be blank."
+			continue
+		fi
+		if 	[[ ! "${COURSE_NAME}" =~ ^[[:alnum:]]*$ ]]; then
 			echo "Only characters A-Za-z0-9 are allowed in the Course Name"
 			continue
 		fi
@@ -42,20 +46,20 @@ handle_create_course() {
 				"or remove the invalid entry."
 			continue
 		fi
-
 		break
-
 	done
 
 	# Read until valid directory path is provided
 	while [[ 1 ]]; do
-		printf "Path: "
-		read DIRECTORY_PATH
+		read -p "Path:" DIRECTORY_PATH
+		DIRECTORY_PATH="${DIRECTORY_PATH/#\~/$HOME}"
 
 		if [[ ! -d "$DIRECTORY_PATH" ]]; then
 			printf "The following path does not exist:\n%s\n" "$DIRECTORY_PATH"
 			continue
 		fi
+		# Add / if DIRECTORY doesnt end in one
+		[[ "${DIRECTORY_PATH}" != */ ]] && DIRECTORY_PATH="$DIRECTORY_PATH/"
 
 		break
 	done
