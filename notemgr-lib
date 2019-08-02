@@ -104,4 +104,18 @@ get_courses () {
 	unset CourseNames
 }
 
+# Determine whether the specified course has been archived. The course is
+# assumed to not be archived unless specified. Assumes the course exists
+# in the database.
+# Arguments:
+#	Course Name
+# Returns:
+#	0 when Archived, otherwise none
+is_course_archived () {
+	local COURSE_NAME="$1"
+
+	QUERY=`jq --arg v "$COURSE_NAME" '.Courses[$v].archived' <<< $DB_FILE`
+
+	[[ "$QUERY" == "true" ]] && return 0 || return 1
+}
 
