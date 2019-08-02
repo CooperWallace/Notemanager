@@ -46,14 +46,23 @@ Help maintain and manage Notes for the specified courses on the Users system.
 # Arguments:
 #	Course name
 get_course_lectures () {
-	local COURSE
-	COURSE="$1"
+	local COURSE="$1"
+
+	course_exists "$COURSE"
+
+	if [[ $? != 0 ]]; then
+		printf "The course, %s, doesn't exist in the database." \
+			"$COURSE"
+		exit 1
+	fi
 
 	get_course_directory "$COURSE"
 
-	if [[ $? == 1 ]]; then
-		echo "Course doesn't exist in Database."
-		exit
+	# Verify Lecture subdirectory exists
+	DIRECTORY="$DIRECTORY""Lecture/"
+	if [[ -e $DIRECTORY ]]; then
+		echo "Sub directory 'Lecture' doesnt exist for this course."
+		echo "Please create it."
 	fi
 
 	# List Lectures contained in the Course
@@ -78,30 +87,22 @@ fi
 # Initialize Configuration file containing Database
 init_db
 
-while getopts "hlLg:s:c:" o; do
+while getopts "hlLs:c:g:" o; do
 	case "${o}" in
 		l)
 			get_courses
 			;;
 		g)
-			courseName=${OPTARG}
-			get_course_directory "$courseName"
+			get_course_directory "${OPTARG}"
 			echo "$DIRECTORY"
 			;;
-		e)
-			courseName=${OPTARG}
-			course_exists $courseName
-			echo $?
+		s)
+			get_course_lectures "${OPTARG}"
+
 			;;
-		c)
-			courseName=${OPTARG}
-			get_course_lectures "$courseName"
-			;;
-		h)
+		* | h)
 			usage
-			;;
-		*)
-			usage
+			exit
 			;;
 	esac
 done
