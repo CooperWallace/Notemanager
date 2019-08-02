@@ -60,14 +60,33 @@ get_course_lectures () {
 
 	# Verify Lecture subdirectory exists
 	DIRECTORY="$DIRECTORY""Lecture/"
-	if [[ -e $DIRECTORY ]]; then
+	if [[ ! -e $DIRECTORY ]]; then
 		echo "Sub directory 'Lecture' doesnt exist for this course."
 		echo "Please create it."
+		exit 1
 	fi
 
 	# List Lectures contained in the Course
 	ls "$DIRECTORY" | grep "Lecture" | sort --version-sort
 }
+
+# Create a new Lecture file, and return the path
+# Arguments:
+#	Course Name
+create_course_lecture () {
+	local COURSE_NAME="$1"
+
+	# Obtain the number of Lectures that currently exist
+	local LECTURE_NUM=$(get_course_lectures "$COURSE_NAME" | wc -l )
+
+	if [[ $LECTURE_NUM -eq 0 ]]; then
+		echo "Lecture1.md"
+	fi
+
+	# Next Lecture name will be LECTURE_NUM+1
+	printf "Lecture%d.md\n" $((LECTURE_NUM+1))
+}
+
 
 ################################################################################
 
@@ -98,7 +117,9 @@ while getopts "hlLs:c:g:" o; do
 			;;
 		s)
 			get_course_lectures "${OPTARG}"
-
+			;;
+		c)
+			create_course_lecture "${OPTARG}"
 			;;
 		* | h)
 			usage
