@@ -104,6 +104,24 @@ get_courses () {
 	unset CourseNames
 }
 
+# Set the specified course as being considered Archived. Assumes that the
+# provided course already exists.
+# Arguments:
+#	Course name
+set_course_archived () {
+	local COURSE_NAME="$1"
+	if is_course_archived "$COURSE_NAME"; then
+		printf "Course, %s, is already archived.\n" "$COURSE_NAME"
+		return 1
+	fi
+
+	QUERY=`jq -r --arg v "$COURSE_NAME" '.Courses[$v].archived = "true"' <<< $DB_FILE`
+	echo $QUERY > "$DB_PATH"
+
+	printf "Course, %s, successfully archived.\n" "$COURSE_NAME"
+}
+
+
 # Determine whether the specified course has been archived. The course is
 # assumed to not be archived unless specified. Assumes the course exists
 # in the database.
