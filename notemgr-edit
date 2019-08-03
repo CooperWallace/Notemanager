@@ -16,7 +16,7 @@ Help maintain and manage Courses in the notemgr database.
   -h	Display usage message
   -c	Create a Course entry
 TODO:  -c [Course] [Path]	Create a Course entry
-TODO:  -a [Course]	Archive the specified course
+  -a [Course]	Archive the specified course
 "
 }
 
@@ -51,7 +51,7 @@ handle_create_course() {
 
 	# Read until valid directory path is provided
 	while [[ 1 ]]; do
-		read -p "Path:" DIRECTORY_PATH
+		read -p "Path: " DIRECTORY_PATH
 		DIRECTORY_PATH="${DIRECTORY_PATH/#\~/$HOME}"
 
 		if [[ ! -d "$DIRECTORY_PATH" ]]; then
@@ -81,6 +81,20 @@ handle_create_course() {
 	fi
 }
 
+# Handler for setting the specified Course as being archived
+handle_archive_course () {
+	local COURSE_NAME="$1"
+
+	if ! course_exists "$COURSE_NAME"; then
+		printf "Course, %s, doesn't exist.\n" "$COURSE_NAME"
+		return 1
+	fi
+
+	set_course_archived "$COURSE_NAME"
+}
+
+
+
 ################################################################################
 
 # Loading Library for shared functions contained in 'notemgr-lib'
@@ -99,10 +113,13 @@ fi
 # Initialize Configuration file containing Database
 init_db
 
-while getopts "c" o; do
+while getopts "ca:" o; do
 	case "${o}" in
 		c)
 			handle_create_course
+			;;
+		a)
+			handle_archive_course "${OPTARG}"
 			;;
 		*)
 			usage
