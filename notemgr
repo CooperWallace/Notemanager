@@ -34,7 +34,6 @@ Help maintain and manage Notes for the specified courses on the Users system.
  Options:
   -h	Display usage message
   -l	List Courses
-  -L	List Courses with more information
   -s Course 	List Notes for the specified course
   -c Course 	Create a new Lecture in the course
   -g Course 	Get Course Directory
@@ -45,18 +44,18 @@ Help maintain and manage Notes for the specified courses on the Users system.
 # Outputs a list of Lectures that belongs to the specified Course if it exists
 # Arguments:
 #	Course name
-get_course_lectures () {
-	local COURSE="$1"
+handle_display_lectures () {
+	local COURSE_NAME="$1"
 
-	course_exists "$COURSE"
+	course_exists "$COURSE_NAME"
 
 	if [[ $? != 0 ]]; then
 		printf "The course, %s, doesn't exist in the database." \
-			"$COURSE"
+			"$COURSE_NAME"
 		exit 1
 	fi
 
-	get_course_directory "$COURSE"
+	get_course_directory "$COURSE_NAME"
 
 	# Verify Lecture subdirectory exists
 	DIRECTORY="$DIRECTORY""Lecture/"
@@ -68,24 +67,23 @@ get_course_lectures () {
 
 	# List Lectures contained in the Course
 	ls "$DIRECTORY" | grep "Lecture" | sort --version-sort
+
 }
 
 # Determine the file name of the new Lecture in the specified course
 # Arguments:
 #	Course Name
-create_course_lecture () {
+handle_create_lecture () {
 	local COURSE_NAME="$1"
 
-	is_course_archived "$COURSE_NAME"
-
-	if [[ $? == 0 ]]; then
+	if is_course_archived "$COURSE_NAME"; then
 		echo -n "The course $COURSE_NAME has been archived."
 		echo " New lectures cannot be added to it."
 		exit 1
 	fi
 
 	# Obtain the number of Lectures that currently exist
-	local LECTURE_NUM=$(get_course_lectures "$COURSE_NAME" | wc -l )
+	local LECTURE_NUM=$(handle_display_lectures "$COURSE_NAME" | wc -l )
 
 	if [[ $LECTURE_NUM -eq 0 ]]; then
 		echo "Lecture1.md"
@@ -124,10 +122,10 @@ while getopts "hlLs:c:g:" o; do
 			echo "$DIRECTORY"
 			;;
 		s)
-			get_course_lectures "${OPTARG}"
+			handle_display_lectures "${OPTARG}"
 			;;
 		c)
-			create_course_lecture "${OPTARG}"
+			handle_create_lecture "${OPTARG}"
 			;;
 		* | h)
 			usage
