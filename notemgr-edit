@@ -27,7 +27,7 @@ handle_create_course() {
 
 	# Read until a valid course name is provided
 	while [[ 1 ]]; do
-		read -p "Course name: " COURSE_NAME
+		read -e -p "Course name: " COURSE_NAME
 
 		if [[ "$COURSE_NAME" == "" ]]; then
 			echo "Course name cannot be blank."
@@ -51,7 +51,7 @@ handle_create_course() {
 
 	# Read until valid directory path is provided
 	while [[ 1 ]]; do
-		read -p "Path: " DIRECTORY_PATH
+		read -e -p "Path: " DIRECTORY_PATH
 		DIRECTORY_PATH="${DIRECTORY_PATH/#\~/$HOME}"
 
 		if [[ ! -d "$DIRECTORY_PATH" ]]; then
@@ -67,7 +67,7 @@ handle_create_course() {
 	printf "\n------\nConfirmation\nCourse: %s\nDirectory: %s\n" \
 		"$COURSE_NAME" \
 		"$DIRECTORY_PATH"
-	read -p "Create Course? (Yy): " resp
+	read -e -p "Create Course? (Yy): " resp
 
 	if [[ ! "${resp,,}" == "y" ]]; then
 		printf "Aborting"
