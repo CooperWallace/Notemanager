@@ -27,14 +27,17 @@
 
 # Display the Usage Documentation message
 usage() {
-	echo -n "Usage: $0 [OPTIONS] Course
+	echo -n "Usage:
+
+$0 [OPTIONS]
+$0 Course			Display all Lectures in course
+$0 Course Lecture	Print path to the specific lecture
 
 Help maintain and manage Notes for the specified courses on the Users system.
 
  Options:
   -h	Display usage message
   -l	List Courses
-  -s Course 	List Notes for the specified course
   -c Course 	Create a new Lecture in the course
   -g Course 	Get Course Directory
 "
@@ -93,6 +96,29 @@ handle_create_lecture () {
 	printf "Lecture%d.md\n" $((LECTURE_NUM+1))
 }
 
+# Return the path to the Lecture in a course if they both exist
+# Arguments
+# $1 Course
+# $2 Lecture Name
+handle_display_lecture_path() {
+	local COURSE="$1"
+	local LECTURE_NAME="$2"
+
+	if course_exists; then
+		echo "Error: Course doesn't exist"
+		exit
+	fi
+
+	if lecture_exists; then
+		echo "Error: Lecture $2 doesn't belong to $1"
+		exit
+	fi
+
+	get_course_directory "$1"
+
+	printf "%sLecture/%s" "$DIRECTORY" "$2"
+}
+
 
 ################################################################################
 
@@ -112,20 +138,16 @@ fi
 # Initialize Configuration file containing Database
 init_db
 
-while getopts "hlLs:c:g:" o; do
+while getopts "hc:g:" o; do
 	case "${o}" in
-		l)
-			get_courses
-			;;
 		g)
 			get_course_directory "${OPTARG}"
 			echo "$DIRECTORY"
-			;;
-		s)
-			handle_display_lectures "${OPTARG}"
+			exit
 			;;
 		c)
 			handle_create_lecture "${OPTARG}"
+			exit
 			;;
 		* | h)
 			usage
@@ -136,9 +158,16 @@ done
 
 shift $((OPTIND-1))
 
-# Default option when no arguments are specified
+## Handle non-specific
+
 if [[ $OPTIND -eq 1 ]] && [[ $# == 0 ]]; then
-	usage
+	get_courses
+	exit
+# Otherwise Handle Course only when 1 argument
+elif [[ $# == 1 ]]; then
+	handle_display_lectures "$1"
+	exit
+elif [[	$# == 2 ]]; then
+	handle_display_lecture_path "$@"
 	exit
 fi
-

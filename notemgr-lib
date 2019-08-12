@@ -44,6 +44,31 @@ course_exists () {
 	return $?
 }
 
+# Checks if the first argument, a list, contains the second argument inside of
+# it.
+# $1 List to check
+# $2 Item to find
+contains () {
+	if [[ $1 =~ (^|[[:space:]])"$2"($|[[:space:]]) ]]; then
+		return 0
+	fi
+	return 1
+}
+
+# Determine if the Lecture belongs to the Course
+# Arguments
+# $1 Course to check
+# $2 Lecture
+# Returns:
+# 0 if Lecture is found, otherwise non-zero
+lecture_exists () {
+	local COURSE="$1"
+	local LECTURE_NAME="$2"
+	local LECTURE_NUM=(handle_display_lectures "$COURSE_NAME")
+
+	`contains "$1" "$2"` && return 1 || return 0
+}
+
 # Add Course to Data Structure
 # Arguments:
 #	Course Name
