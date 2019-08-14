@@ -28,6 +28,7 @@
 # Display the Usage Documentation message
 usage() {
 	echo -n "Usage: $0 [OPTIONS]
+$0		Display all non-archived courses
 $0 [Course]		Display all Lectures in course
 $0 [Course] [Lecture]	Print path to the specific lecture
 
@@ -35,9 +36,10 @@ Help maintain and manage Notes for the specified courses on the Users system.
 
  Options:
   -h	Display usage message
-  -l	List Courses
+  -l	List all Courses in database, including those archived.
   -c Course 	Create a new Lecture in the course
   -g Course 	Get Course Directory
+  -a Course		Display whether course has been archived
 "
 }
 ################################################################################
@@ -82,7 +84,7 @@ handle_create_lecture () {
 	if is_course_archived "$COURSE_NAME"; then
 		echo -n "The course $COURSE_NAME has been archived."
 		echo " New lectures cannot be added to it."
-		exit 1
+		exit 2
 	fi
 
 	# Obtain the number of Lectures that currently exist
@@ -115,6 +117,24 @@ handle_display_lecture_path() {
 	printf "%sLecture/%s" "$DIRECTORY" "$2"
 }
 
+# Determine if the Course has been archived.
+# Exit 1 if Non-existant or Archived
+handle_display_archived () {
+	local COURSE_NAME="$1"
+
+	if ! course_exists "$COURSE_NAME"; then
+		echo "The course $COURSE_NAME doesn't exist in the database."
+		exit 1
+	fi
+
+	if is_course_archived "$COURSE_NAME"; then
+		echo -n "The course $COURSE_NAME has been archived."
+		exit 1
+	fi
+
+	exit 0
+}
+
 
 ################################################################################
 
@@ -134,7 +154,7 @@ fi
 # Initialize Configuration file containing Database
 init_db
 
-while getopts "hc:g:" o; do
+while getopts "hlc:g:a:" o; do
 	case "${o}" in
 		g)
 			get_course_directory "${OPTARG}"
@@ -143,6 +163,14 @@ while getopts "hc:g:" o; do
 			;;
 		c)
 			handle_create_lecture "${OPTARG}"
+			exit
+			;;
+		a)
+			handle_display_archived "${OPTARG}"
+			exit
+			;;
+		l)
+			get_all_courses
 			exit
 			;;
 		* | h)
@@ -160,12 +188,12 @@ shift $((OPTIND-1))
 # 2 Args	Display path to specified Lecture
 
 if [[ $# == 0 ]]; then
-	get_courses
+	get_active_courses
 # Otherwise Handle Course only when 1 argument
 elif [[ $# == 1 ]]; then
 	handle_display_lectures "$1"
 elif [[	$# == 2 ]]; then
-	handle_display_lecture_path "$@"
+	handle_display_lecture_path "$1" "$2"
 else
 	usage
 fi
