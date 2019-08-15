@@ -22,9 +22,16 @@ fi
 # Returns
 # 	COURSE_SELECTION	Contains name of selected course
 get_course_selection () {
-	local COURSE_LIST=`exec $NOTEMGR_PATH`
-	COURSE_SELECTION=$( rofi -dmenu -p "Select Course" <<< "$COURSE_LIST" )
+	local COURSE_LIST
+	COURSE_LIST=`exec $NOTEMGR_PATH`
 
+	# If there was an error obtaining the path
+	if [[ $? != 0 ]]; then
+		rofi -e "$COURSE_LIST"
+		exit
+	fi
+
+	COURSE_SELECTION=$( rofi -dmenu -p "Select Course" <<< "$COURSE_LIST" )
 	# Break if Escape or likewise is pressed
 	if [[ $? != 0 ]]; then
 		exit
@@ -39,7 +46,14 @@ get_course_selection () {
 # Prompt for Lecture selection using rofi
 # Confirms that the Lecture exists before returning.
 get_lecture_selection () {
-	local LECTURE_LIST=`./notemgr $COURSE_SELECTION`
+	local LECTURE_LIST
+	LECTURE_LIST=`./notemgr $COURSE_SELECTION`
+
+	# If there was an error obtaining the path
+	if [[ $? != 0 ]]; then
+		rofi -e "$LECTURE_LIST"
+		exit
+	fi
 	LECTURE_SELECTION=$(rofi -dmenu -p "Lecture Select" <<< "$LECTURE_LIST")
 
 	if [[ $? != 0 ]]; then
