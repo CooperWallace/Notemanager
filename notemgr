@@ -90,8 +90,10 @@ handle_create_lecture () {
 	# Obtain the number of Lectures that currently exist
 	local LECTURE_NUM=$(handle_display_lectures "$COURSE_NAME" | wc -l )
 
+	get_course_directory "$COURSE_NAME"
+
 	# Next Lecture name will be LECTURE_NUM+1
-	printf "Lecture%d.md\n" $((LECTURE_NUM+1))
+	printf "%sLecture/Lecture%d.md\n" "$DIRECTORY" $((LECTURE_NUM+1))
 }
 
 # Return the path to the Lecture in a course if they both exist
@@ -99,7 +101,7 @@ handle_create_lecture () {
 # $1 Course
 # $2 Lecture Name
 handle_display_lecture_path() {
-	local COURSE="$1"
+	local COURSE_NAME="$1"
 	local LECTURE_NAME="$2"
 
 	if course_exists; then
@@ -112,7 +114,7 @@ handle_display_lecture_path() {
 		exit
 	fi
 
-	get_course_directory "$1"
+	get_course_directory "$COURSE_NAME"
 
 	printf "%sLecture/%s" "$DIRECTORY" "$2"
 }
@@ -186,6 +188,7 @@ shift $((OPTIND-1))
 # 0 Args 	display courses
 # 1 Args	Display Lectures for Course
 # 2 Args	Display path to specified Lecture
+
 
 if [[ $# == 0 ]]; then
 	get_active_courses

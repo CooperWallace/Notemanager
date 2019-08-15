@@ -71,10 +71,10 @@ add_course_to_db() {
 # Returns:
 #	0 on success, otherwise non-zero
 get_course_directory () {
-	local COURSE="$1"
+	local COURSE_NAME="$1"
 
 	# Determine if a course was specified
-	if [[ -z $COURSE ]] || [[ "$COURSE" == "" ]]; then
+	if [[ -z $COURSE_NAME ]] || [[ "$COURSE_NAME" == "" ]]; then
 		echo "get_course_directory: No Course specified"
 		exit 1
 	fi
@@ -93,6 +93,7 @@ get_course_directory () {
 get_active_courses () {
 	QUERY=`jq -r '.Courses | keys[] as $k | (select(.[$k].archived == null)) |
 		$k' <<<$DB_FILE`
+
 	echo "$QUERY"
 }
 
@@ -164,7 +165,7 @@ contains () {
 # Returns:
 # 0 if Lecture is found, otherwise non-zero
 lecture_exists () {
-	local COURSE="$1"
+	local COURSE_NAME="$1"
 	local LECTURE_NAME="$2"
 	local LECTURE_NUM=(handle_display_lectures "$COURSE_NAME")
 
