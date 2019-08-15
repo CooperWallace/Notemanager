@@ -79,7 +79,7 @@ get_course_directory () {
 		exit 1
 	fi
 
-	DIRECTORY=$(jq -r --arg v "$COURSE" '.Courses[$v].dir' <<< $DB_FILE)
+	DIRECTORY=$(jq -r --arg v "$COURSE_NAME" '.Courses[$v].dir' <<< $DB_FILE)
 
 	if [[ $DIRECTORY == "null" ]]; then
 		return 1
@@ -93,6 +93,17 @@ get_course_directory () {
 get_active_courses () {
 	QUERY=`jq -r '.Courses | keys[] as $k | (select(.[$k].archived == null)) |
 		$k' <<<$DB_FILE`
+
+	if [[ $? != 0 ]]; then
+		echo "There was an error obtaining the active courses."
+		exit 1
+	fi
+
+	if [[ -z "$QUERY" || "$QUERY" == "" ]]; then
+		echo "There are currently no active courses in the database."
+		echo "Please add a new course or set a existing course to be active."
+		exit 1
+	fi
 
 	echo "$QUERY"
 }
