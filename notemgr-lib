@@ -91,8 +91,10 @@ get_course_directory () {
 
 # Display all of the Active Courses in the database.
 get_active_courses () {
-	QUERY=`jq -r '.Courses | keys[] as $k | (select(.[$k].archived == null)) |
-		$k' <<<$DB_FILE`
+	QUERY=`jq -r '.Courses | keys[] as $k |
+		select((.[$k].archived == "false") or (.[$k].archived==null)) |
+		$k' <<<$DB_FILE
+		`
 
 	if [[ $? != 0 ]]; then
 		echo "There was an error obtaining the active courses."
@@ -139,6 +141,21 @@ set_course_archived () {
 	printf "Course, %s, successfully archived.\n" "$COURSE_NAME"
 }
 
+# Set the specified course to being Active if it was archived.
+# Arguments:
+#	Course name
+set_course_active () {
+	local COURSE_NAME="$1"
+	if ! is_course_archived "$COURSE_NAME"; then
+		printf "Course, %s, is already active.\n" "$COURSE_NAME"
+		return 1
+	fi
+
+	QUERY=`jq -r --arg v "$COURSE_NAME" '.Courses[$v].archived = "false"' <<< $DB_FILE`
+	echo $QUERY > "$DB_PATH"
+
+	printf "Course, %s, successfully set to active.\n" "$COURSE_NAME"
+}
 
 # Determine whether the specified course has been archived. The course is
 # assumed to not be archived unless specified. Assumes the course exists

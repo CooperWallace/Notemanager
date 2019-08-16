@@ -15,7 +15,6 @@ Help maintain and manage Courses in the notemgr database.
  Options:
   -h	Display usage message
   -c	Create a Course entry
-TODO:  -c [Course] [Path]	Create a Course entry
   -a [Course]	Archive the specified course
 "
 }
@@ -93,7 +92,17 @@ handle_archive_course () {
 	set_course_archived "$COURSE_NAME"
 }
 
+# Handler for setting the specified Course as being active
+handle_active_course() {
+	local COURSE_NAME="$1"
 
+	if ! course_exists "$COURSE_NAME"; then
+		printf "Course, %s, doesn't exist.\n" "$COURSE_NAME"
+		return 1
+	fi
+
+	set_course_active "$COURSE_NAME"
+}
 
 ################################################################################
 
@@ -113,13 +122,16 @@ fi
 # Initialize Configuration file containing Database
 init_db
 
-while getopts "ca:" o; do
+while getopts "ca:A:" o; do
 	case "${o}" in
 		c)
 			handle_create_course
 			;;
 		a)
 			handle_archive_course "${OPTARG}"
+			;;
+		A)
+			handle_active_course "${OPTARG}"
 			;;
 		*)
 			usage
