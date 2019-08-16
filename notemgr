@@ -109,8 +109,9 @@ handle_display_lecture_path() {
 		exit
 	fi
 
-	if lecture_exists; then
-		echo "Error: Lecture $2 doesn't belong to $1"
+	if lecture_exists "$COURSE_NAME" "$LECTURE_NAME"; then
+		printf "Error: The course %s doesnt have a lecture named, %s." \
+			"$COURSE_NAME" "$LECTURE_NAME"
 		exit
 	fi
 

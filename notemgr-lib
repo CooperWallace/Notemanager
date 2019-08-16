@@ -180,7 +180,7 @@ is_course_archived () {
 # $1 List to check
 # $2 Item to find
 contains () {
-	if [[ $1 =~ (^|[[:space:]])"$2"($|[[:space:]]) ]]; then
+	if [[ "$1" =~ (^|[[:space:]])"$2"($|[[:space:]]) ]]; then
 		return 0
 	fi
 	return 1
