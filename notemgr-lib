@@ -62,9 +62,9 @@ invoke_db_query () {
 #		0 if the Course exists, otherwise non-zero
 course_exists () {
 	local COURSE_NAME="$1"
-	local QUERY=$(printf "jq -e '.[] | select( .| has(\"%s\"))'" $COURSE_NAME)
+	local QUERY=$(printf ".Courses | select(. | has(\"%s\"))" "$COURSE_NAME")
 
-	( eval $QUERY <<< $DB_FILE > /dev/null )
+	(invoke_db_query "-e" "$QUERY" > /dev/null)
 	return $?
 }
 
