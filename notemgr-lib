@@ -77,14 +77,14 @@ add_course_to_db() {
 	local DIRECTORY_PATH="$2"
 
 	# Database query to Add Course
-	QUERY=$(printf \
-		"jq '.Courses += {\"%s\": {\"dir\": \"%s\"}}' %s" \
+	local QUERY=$(printf ".Courses += {\"%s\": {\"dir\": \"%s\"}}" \
 		"$COURSE_NAME" \
 		"$DIRECTORY_PATH" \
-		"$DB_PATH" \
 	)
 
-	echo "$(eval $QUERY)" > "$DB_PATH"
+	local db_update=$(invoke_db_query "" "$QUERY")
+
+	echo "$db_update" > "$DB_PATH"
 }
 
 # Return the Directory that corresponds to the specified Course, if it exists
@@ -104,11 +104,10 @@ get_course_directory () {
 		exit 1
 	fi
 
-	DIRECTORY=$(jq -r --arg v "$COURSE_NAME" '.Courses[$v].dir' <<< $DB_FILE)
+	local QUERY=$(printf ".Courses.%s.dir" "$COURSE_NAME")
+	DIRECTORY=$(invoke_db_query "-r" "$QUERY")
 
-	if [[ $DIRECTORY == "null" ]]; then
-		return 1
-	fi
+	[[ $DIRECTORY == "null" ]] && return 1
 
 	# Add / if DIRECTORY doesnt end in one
 	[[ "${DIRECTORY}" != */ ]] && DIRECTORY="$DIRECTORY/"
@@ -116,37 +115,38 @@ get_course_directory () {
 
 # Display all of the Active Courses in the database.
 get_active_courses () {
-	QUERY=`jq -r '.Courses | keys[] as $k |
-		select((.[$k].archived == "false") or (.[$k].archived==null)) |
-		$k' <<<$DB_FILE
-		`
+	local QUERY=".Courses | keys[] as \$k | "
+	QUERY+="select((.[\$k].archived == "false") or "
+	QUERY+="(.[\$k].archived==null)) | \$k "
+
+	local RESPONSE=$(invoke_db_query "-r" "$QUERY")
 
 	if [[ $? != 0 ]]; then
 		echo "There was an error obtaining the active courses."
 		exit 1
 	fi
 
-	if [[ -z "$QUERY" || "$QUERY" == "" ]]; then
+	if [[ -z "$RESPONSE" || "$RESPONSE" == "" ]]; then
 		echo "There are currently no active courses in the database."
 		echo "Please add a new course or set a existing course to be active."
 		exit 1
 	fi
 
-	echo "$QUERY"
+	echo "$RESPONSE"
 }
 
 # Display the Courses that currently exist in the Database
 get_all_courses () {
-	readarray -t CourseNames < <(echo $DB_FILE | jq -r ".Courses | keys[]")
+	local QUERY=".Courses | keys[]"
+	local RESPONSE=$(invoke_db_query "-r" "$QUERY")
 
-	if (( ${#CourseNames[@]} == 0 )); then
+	if [[ "$RESPONSE" == "" ]]; then
 		echo "No Courses currently exist in the database."
 		echo "You may add one by using -a option"
 		exit
 	fi
 
-	printf "%s\n" "${CourseNames[@]}"
-	unset CourseNames
+	echo "$RESPONSE"
 }
 
 # Set the specified course as being considered Archived. Assumes that the
@@ -155,14 +155,16 @@ get_all_courses () {
 #	Course name
 set_course_archived () {
 	local COURSE_NAME="$1"
+
 	if is_course_archived "$COURSE_NAME"; then
 		printf "Course, %s, is already archived.\n" "$COURSE_NAME"
 		return 1
 	fi
 
-	QUERY=`jq -r --arg v "$COURSE_NAME" '.Courses[$v].archived = "true"' <<< $DB_FILE`
-	echo $QUERY > "$DB_PATH"
+	local QUERY=".Courses.$COURSE_NAME.archived = \"true\""
+	local RESPONSE=$(invoke_db_query "" "$QUERY")
 
+	echo "$RESPONSE" > "$DB_PATH"
 	printf "Course, %s, successfully archived.\n" "$COURSE_NAME"
 }
 
@@ -176,9 +178,10 @@ set_course_active () {
 		return 1
 	fi
 
-	QUERY=`jq -r --arg v "$COURSE_NAME" '.Courses[$v].archived = "false"' <<< $DB_FILE`
-	echo $QUERY > "$DB_PATH"
+	local QUERY=".Courses.$COURSE_NAME.archived = \"false\""
+	local RESPONSE=$(invoke_db_query "" "$QUERY")
 
+	echo "$RESPONSE" > "$DB_PATH"
 	printf "Course, %s, successfully set to active.\n" "$COURSE_NAME"
 }
 
@@ -192,9 +195,10 @@ set_course_active () {
 is_course_archived () {
 	local COURSE_NAME="$1"
 
-	QUERY=`jq -r --arg v "$COURSE_NAME" '.Courses[$v].archived' <<< $DB_FILE`
+	local QUERY=".Courses.$COURSE_NAME.archived"
+	local RESPONSE=$(invoke_db_query "-r" "$QUERY")
 
-	[[ "$QUERY" == "true" ]] && return 0 || return 1
+	[[ "$RESPONSE" == "true" ]] && return 0 || return 1
 }
 
 ################################################################################
@@ -220,7 +224,7 @@ contains () {
 lecture_exists () {
 	local COURSE_NAME="$1"
 	local LECTURE_NAME="$2"
-	local LECTURE_NUM=(handle_display_lectures "$COURSE_NAME")
+	local LECTURE_NUM=$(handle_display_lectures "$COURSE_NAME")
 
 	`contains "$1" "$2"` && return 1 || return 0
 }
