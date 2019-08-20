@@ -29,6 +29,31 @@ init_db() {
 	fi
 }
 
+# Invoke the specified query on the database. Outputs command to stdout,
+# Returns status code. Should be used for all queries
+# Arguments:
+#	Flags
+#	Query
+# Returns:
+#	Query output into stdout
+#	Return status of query
+invoke_db_query () {
+	local FLAG_STR="$1"
+	local QUERY_STR="$2"
+
+	if [[ -z "$QUERY_STR" ]] || [[ "$QUERY_STR" == "" ]]; then
+		echo "invoke_db_query: No query specified. Exitting"
+		exit 1
+	fi
+
+	QUERY=$(printf "jq %s '%s'" "$FLAG_STR" "$QUERY_STR")
+
+	eval "$QUERY" <<< "$DB_FILE"
+	return $?
+}
+
+################################################################################
+
 # Determines if a Course with the specified name currently exists in the
 # database
 # Arguments:
