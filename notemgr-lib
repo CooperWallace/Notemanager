@@ -82,19 +82,18 @@ add_course_to_db() {
 		"$DIRECTORY_PATH" \
 	)
 
-	local db_update=$(invoke_db_query "" "$QUERY")
+	local RESPONSE=$(invoke_db_query "" "$QUERY")
 
-	echo "$db_update" > "$DB_PATH"
+	echo "$RESPONSE" > "$DB_PATH"
 }
 
 # Return the Directory that corresponds to the specified Course, if it exists
 #
-# GLOBAL:
-#	DIRECTORY - Path to the specified course
 # Arguments:
 #	Course - Name of Course to search
 # Returns:
-#	0 on success, otherwise non-zero
+#	Directory to stdout on success
+#	Exit status 0 on success, otherwise non-zero
 get_course_directory () {
 	local COURSE_NAME="$1"
 
@@ -105,12 +104,14 @@ get_course_directory () {
 	fi
 
 	local QUERY=$(printf ".Courses.%s.dir" "$COURSE_NAME")
-	DIRECTORY=$(invoke_db_query "-r" "$QUERY")
+	RESPONSE=$(invoke_db_query "-r" "$QUERY")
 
-	[[ $DIRECTORY == "null" ]] && return 1
+	[[ $RESPONSE == "null" ]] && return 1
 
-	# Add / if DIRECTORY doesnt end in one
-	[[ "${DIRECTORY}" != */ ]] && DIRECTORY="$DIRECTORY/"
+	# Add / if RESPONSE doesnt end in one
+	[[ "${RESPONSE}" != */ ]] && RESPONSE="$RESPONSE/"
+
+	echo "$RESPONSE"
 }
 
 # Display all of the Active Courses in the database.

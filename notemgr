@@ -37,7 +37,7 @@ handle_display_lectures () {
 		exit 1
 	fi
 
-	get_course_directory "$COURSE_NAME"
+	local DIRECTORY=$(get_course_directory "$COURSE_NAME")
 
 	# Verify Lecture subdirectory exists
 	DIRECTORY="$DIRECTORY""Lecture/"
@@ -66,13 +66,13 @@ handle_create_lecture () {
 	if is_course_archived "$COURSE_NAME"; then
 		echo -n "The course $COURSE_NAME has been archived."
 		echo " New lectures cannot be added to it."
-		exit 2
+		exit 1
 	fi
 
 	# Obtain the number of Lectures that currently exist
 	local LECTURE_NUM=$(handle_display_lectures "$COURSE_NAME" | wc -l )
 
-	get_course_directory "$COURSE_NAME"
+	local DIRECTORY=$(get_course_directory "$COURSE_NAME")
 
 	# Next Lecture name will be LECTURE_NUM+1
 	printf "%sLecture/Lecture%d.md\n" "$DIRECTORY" $((LECTURE_NUM+1))
@@ -143,7 +143,6 @@ while getopts "hlc:g:a:" o; do
 	case "${o}" in
 		g)
 			get_course_directory "${OPTARG}"
-			echo "$DIRECTORY"
 			exit
 			;;
 		c)
