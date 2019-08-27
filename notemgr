@@ -86,19 +86,17 @@ handle_display_lecture_path() {
 	local COURSE_NAME="$1"
 	local LECTURE_NAME="$2"
 
-	if course_exists; then
-		echo "Error: Course doesn't exist"
-		exit
+	if ! course_exists "$COURSE_NAME"; then
+		echo "The course $COURSE_NAME doesn't exist in the database."
+		exit 1
 	fi
 
-	if lecture_exists "$COURSE_NAME" "$LECTURE_NAME"; then
-		printf "Error: The course %s doesnt have a lecture named, %s." \
-			"$COURSE_NAME" "$LECTURE_NAME"
-		exit
+	if ! lecture_exists "$COURSE_NAME" "$LECTURE_NAME"; then
+		echo "The Lecture, $LECTURE_NAME was not found"
+		exit 1
 	fi
 
-	get_course_directory "$COURSE_NAME"
-
+	local DIRECTORY=$(get_course_directory "$COURSE_NAME")
 	printf "%sLecture/%s" "$DIRECTORY" "$2"
 }
 
