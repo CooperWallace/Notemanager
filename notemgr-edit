@@ -8,15 +8,17 @@
 
 # Display the Usage Documentation message
 usage() {
-	echo -n "Usage: $0 [OPTIONS] Course
+	echo -n "Usage: $0 [OPTIONS]
 
-Help maintain and manage Courses in the notemgr database.
+Description:
+Maintains the information of all courses that are to be used in the notemgr
+command. Responsible for handling all preferences related to courses
 
- Options:
-  -h	Display usage message
-  -c	Create a Course entry
-TODO:  -c [Course] [Path]	Create a Course entry
-  -a [Course]	Archive the specified course
+Options:
+  -h		Display usage message
+  -c		Create a Course entry
+  -a [Course]	Set the course as being 'archived'.
+  -A [Course]	Set the course as being 'active'.
 "
 }
 
@@ -93,7 +95,17 @@ handle_archive_course () {
 	set_course_archived "$COURSE_NAME"
 }
 
+# Handler for setting the specified Course as being active
+handle_active_course() {
+	local COURSE_NAME="$1"
 
+	if ! course_exists "$COURSE_NAME"; then
+		printf "Course, %s, doesn't exist.\n" "$COURSE_NAME"
+		return 1
+	fi
+
+	set_course_active "$COURSE_NAME"
+}
 
 ################################################################################
 
@@ -113,7 +125,7 @@ fi
 # Initialize Configuration file containing Database
 init_db
 
-while getopts "ca:" o; do
+while getopts "hca:A:" o; do
 	case "${o}" in
 		c)
 			handle_create_course
@@ -121,7 +133,10 @@ while getopts "ca:" o; do
 		a)
 			handle_archive_course "${OPTARG}"
 			;;
-		*)
+		A)
+			handle_active_course "${OPTARG}"
+			;;
+		* | h)
 			usage
 			;;
 	esac

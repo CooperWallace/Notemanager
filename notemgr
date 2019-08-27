@@ -5,44 +5,26 @@
 # Course
 #
 # Written by: Cooper Wallace
-
-###############################################################################
-# This Script will be responsible for managing and maintaining the path of each
-# Course that has been added to its database. It will allow the user to browse the
-# Courses that currently exist in the database, browse the Lectures in a Course,
-# and finally give the path to a Lecture in a specific Course.
-#
-# This script should have the following capabilities:
-#
-# 1. Ability to Add Courses to the Database
-# 	- Active for adding new lecture
-# 	- Directory for searching
-# 2. Browse the Courses in the Database
-# 	- Obtain the path of a specific course
-# 3. Browse Lectures that belong to a specific course
-# 4. Obtain the Path to either
-# 	- A Specified Lecture
-# 	- The Path to a new Lecture file. Lecture(X+1).md
-###############################################################################
+################################################################################
 
 # Display the Usage Documentation message
 usage() {
 	echo -n "Usage: $0 [OPTIONS]
-$0		Display all non-archived courses
+$0			Display all non-archived courses
 $0 [Course]		Display all Lectures in course
 $0 [Course] [Lecture]	Print path to the specific lecture
 
+Desription:
 Help maintain and manage Notes for the specified courses on the Users system.
 
- Options:
-  -h	Display usage message
-  -l	List all Courses in database, including those archived.
-  -c Course 	Create a new Lecture in the course
-  -g Course 	Get Course Directory
-  -a Course		Display whether course has been archived
+Options:
+  -h		Display usage message
+  -l		List all Courses in database, including those archived.
+  -c Course	Create a new Lecture for the course
+  -g Course	Display the path to the course
+  -a Course	Display whether course has been archived
 "
 }
-################################################################################
 
 # Outputs a list of Lectures that belongs to the specified Course if it exists
 # Arguments:
@@ -55,7 +37,7 @@ handle_display_lectures () {
 		exit 1
 	fi
 
-	get_course_directory "$COURSE_NAME"
+	local DIRECTORY=$(get_course_directory "$COURSE_NAME")
 
 	# Verify Lecture subdirectory exists
 	DIRECTORY="$DIRECTORY""Lecture/"
@@ -84,13 +66,13 @@ handle_create_lecture () {
 	if is_course_archived "$COURSE_NAME"; then
 		echo -n "The course $COURSE_NAME has been archived."
 		echo " New lectures cannot be added to it."
-		exit 2
+		exit 1
 	fi
 
 	# Obtain the number of Lectures that currently exist
 	local LECTURE_NUM=$(handle_display_lectures "$COURSE_NAME" | wc -l )
 
-	get_course_directory "$COURSE_NAME"
+	local DIRECTORY=$(get_course_directory "$COURSE_NAME")
 
 	# Next Lecture name will be LECTURE_NUM+1
 	printf "%sLecture/Lecture%d.md\n" "$DIRECTORY" $((LECTURE_NUM+1))
@@ -109,8 +91,9 @@ handle_display_lecture_path() {
 		exit
 	fi
 
-	if lecture_exists; then
-		echo "Error: Lecture $2 doesn't belong to $1"
+	if lecture_exists "$COURSE_NAME" "$LECTURE_NAME"; then
+		printf "Error: The course %s doesnt have a lecture named, %s." \
+			"$COURSE_NAME" "$LECTURE_NAME"
 		exit
 	fi
 
@@ -160,7 +143,6 @@ while getopts "hlc:g:a:" o; do
 	case "${o}" in
 		g)
 			get_course_directory "${OPTARG}"
-			echo "$DIRECTORY"
 			exit
 			;;
 		c)
