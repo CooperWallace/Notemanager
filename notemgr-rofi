@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+
+# Create an interactive selection for creating and editting existing notes on
+# this system.
+SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
+NOTEMGR_PATH=$SCRIPT_PATH"/notemgr"
+LIB_PATH=$SCRIPT_PATH"/notemgr-lib"
+
+if [[ -f "${LIB_PATH}" ]]; then
+	source "${LIB_PATH}"
+else
+	echo "Couldn't find the notemgr library file."
+	echo "Please find it and add it to the same folder as this script."
+	echo "Exitting..."
+	exit 1
+fi
+
+################################################################################
+# Prompt for Course Selection
+
+# Prompts the user to select a Course in a rofi menu.
+# Returns
+# 	COURSE_SELECTION	Contains name of selected course
+get_course_selection () {
+	local COURSE_LIST
+	COURSE_LIST=`exec $NOTEMGR_PATH`
+
+	# If there was an error obtaining the path
+	if [[ $? != 0 ]]; then
+		rofi -e "$COURSE_LIST"
+		exit
+	fi
+
+	COURSE_SELECTION=$( rofi -dmenu -p "Select Course" <<< "$COURSE_LIST" )
+	# Break if Escape or likewise is pressed
+	if [[ $? != 0 ]]; then
+		exit
+	fi
+
+	if ! course_exists "$COURSE_SELECTION"; then
+		rofi -e "ERROR: The selected course, $COURSE_SELECTION, was not found."
+		exit
+	fi
+}
+
+# Prompt for Lecture selection using rofi
+# Confirms that the Lecture exists before returning.
+get_lecture_selection () {
+	local LECTURE_LIST
+	LECTURE_LIST=`./notemgr $COURSE_SELECTION`
+
+	# If there was an error obtaining the path
+	if [[ $? != 0 ]]; then
+		rofi -e "$LECTURE_LIST"
+		exit
+	fi
+	LECTURE_SELECTION=$(rofi -dmenu -p "Lecture Select" <<< "$LECTURE_LIST")
+
+	if [[ $? != 0 ]]; then
+		exit
+	fi
+
+	if ! lecture_exists "$COURSE_SELECTION" "$LECTURE_SELECTION"; then
+		rofi -e "ERROR: The selected lecture, $LECTURE_SELECTION, was not found."
+		exit
+	fi
+}
+
+################################################################################
+# Rofi Menu Argument Handling
+
+# Function to run when 'create' is chosen in menu
+handle_rofi_create () {
+	get_course_selection
+	DIRECTORY=$(exec $NOTEMGR_PATH -c "$COURSE_SELECTION")
+	if [[ $? != 0 ]]; then
+		rofi -e "$DIRECTORY"
+		exit
+	fi
+
+	unset COURSE_SELECTION
+}
+
+# Function to run when 'edit' is chosen in menu
+handle_rofi_edit () {
+	get_course_selection
+	get_lecture_selection # Confirms Lecture exists
+	DIRECTORY=$(exec $NOTEMGR_PATH "$COURSE_SELECTION" "$LECTURE_SELECTION")
+
+	if [[ $? != 0 ]]; then
+		rofi -e "$DIRECTORY"
+		exit
+	fi
+
+	unset LECTURE_SELECTION
+	unset COURSE_SELECTION
+}
+
+################################################################################
+
+MAIN_PROMPT=$(printf "Create\nEdit")
+SEL=$(rofi -dmenu -p "Selection" <<< "$MAIN_PROMPT")
+
+# Handle different menu items
+
+if [[ $SEL == "Create" ]]; then
+	handle_rofi_create
+elif [[ $SEL == "Edit" ]]; then
+	handle_rofi_edit
+else
+	rofi -e "Error: The specified options, $SEL, is not valid"
+	exit
+fi
+
+# Extract the Filename and Directory of the Note
+
+DIRECTORY=$(echo -n "$DIRECTORY")	# Remove unwanted captured chars
+NOTE_DIR=$(dirname "$DIRECTORY")
+NOTE_NAME=$(basename "$DIRECTORY")
+
+( cd "$NOTE_DIR" && terminal -e vim "$NOTE_NAME" )
