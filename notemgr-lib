@@ -205,6 +205,31 @@ is_course_archived () {
 ################################################################################
 # Helper functions
 
+# Outputs a list of Lectures that belongs to the specified Course if it exists
+# Arguments:
+#	Course name
+handle_display_lectures () {
+	local COURSE_NAME="$1"
+
+	if ! course_exists "$COURSE_NAME"; then
+		echo "The course $COURSE_NAME doesn't exist in the database."
+		exit 1
+	fi
+
+	local DIRECTORY=$(get_course_directory "$COURSE_NAME")
+
+	# Verify Lecture subdirectory exists
+	DIRECTORY="$DIRECTORY""Lecture/"
+	if [[ ! -e $DIRECTORY ]]; then
+		echo "Sub directory 'Lecture' doesnt exist for this course."
+		echo "Please create it."
+		exit 1
+	fi
+
+	# List Lectures contained in the Course
+	ls "$DIRECTORY" | grep "Lecture" | sort --version-sort
+}
+
 # Checks if the first argument, a list, contains the second argument inside of
 # it.
 # $1 List to check
@@ -230,3 +255,4 @@ lecture_exists () {
 	`contains "$LECTURE_NUM" "$LECTURE_NAME"`
 	return $?
 }
+

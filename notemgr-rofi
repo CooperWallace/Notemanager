@@ -101,6 +101,9 @@ handle_rofi_edit () {
 MAIN_PROMPT=$(printf "Create\nEdit")
 SEL=$(rofi -dmenu -p "Selection" <<< "$MAIN_PROMPT")
 
+# Database must be initialized
+init_db
+
 # Handle different menu items
 
 if [[ $SEL == "Create" ]]; then
