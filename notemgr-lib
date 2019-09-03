@@ -12,7 +12,7 @@
 #	DB_PATH	- READONLY Contains the path to the config file
 #	DB_FILE	- READONLY Contains the contents of the Config file
 init_db() {
-	readonly DB_PATH="test.json"
+	readonly DB_PATH="notemgr_db.json"
 
 	if [[ -e "$DB_PATH" ]]; then
 		DB_FILE=$(< "$DB_PATH")
