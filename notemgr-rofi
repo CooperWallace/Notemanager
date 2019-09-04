@@ -118,7 +118,5 @@ fi
 # Extract the Filename and Directory of the Note
 
 DIRECTORY=$(echo -n "$DIRECTORY")	# Remove unwanted captured chars
-NOTE_DIR=$(dirname "$DIRECTORY")
-NOTE_NAME=$(basename "$DIRECTORY")
 
-( cd "$NOTE_DIR" && terminal -e vim "$NOTE_NAME" )
+( ./notemgr-open "$DIRECTORY" )

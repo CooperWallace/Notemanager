@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+INPUT="$@"
+SESSION="NoteTaking"
+
+# Issue with resizing Terminal
+# https://superuser.com/questions/354844/cannot-resize-tmux-pane-from-bash-script
+set -- $(stty size) # $1 = rows $2 = columns
+tmux -2 new-session -d -s "$SESSION" -x "$2" -y "$(($1 - 1))" # status line uses a row
+
+## Script Begins
+
+# Open a new Window and run VIM on the input
+tmux selectp -t 0
+tmux send-keys "vim \"$INPUT\"" C-m
+
+# Split vertically, and create a compilation sesion
+tmux split-window
+tmux send-keys "pandocWatch \"$INPUT\"" C-m
+tmux resize-pane -y 5
+
+
+# Now attach
+tmux attach-session -t "$SESSION"
+
+
+
+
