@@ -7,6 +7,24 @@
 # Written by: Cooper Wallace
 ################################################################################
 
+# Loading Library for shared functions contained in 'notemgr-lib'
+SCRIPT_PATH=$(dirname "$(readlink -f "$0")")
+LIB_PATH="${SCRIPT_PATH}/notemgr-lib"
+
+if [[ -f "${LIB_PATH}" ]]; then
+	source "${LIB_PATH}"
+else
+	echo "Couldn't find the notemgr library file."
+	echo "Please find it and add it to the same folder as this script."
+	echo "Exitting..."
+	exit 1
+fi
+
+# Initialize Configuration file containing Database
+init_db
+
+################################################################################
+
 # Display the Usage Documentation message
 usage() {
 	echo -n "Usage: $0 [OPTIONS]
@@ -120,22 +138,6 @@ handle_display_archived () {
 
 
 ################################################################################
-
-# Loading Library for shared functions contained in 'notemgr-lib'
-SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
-LIB_PATH="${SCRIPT_PATH}/notemgr-lib"
-
-if [[ -f "${LIB_PATH}" ]]; then
-	source "${LIB_PATH}"
-else
-	echo "Couldn't find the notemgr library file."
-	echo "Please find it and add it to the same folder as this script."
-	echo "Exitting..."
-	exit 1
-fi
-
-# Initialize Configuration file containing Database
-init_db
 
 while getopts "hlc:g:a:" o; do
 	case "${o}" in

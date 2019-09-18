@@ -2,7 +2,7 @@
 
 # Create an interactive selection for creating and editting existing notes on
 # this system.
-SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
+SCRIPT_PATH="$(dirname "$(readlink -f "$0")")"
 NOTEMGR_PATH=$SCRIPT_PATH"/notemgr"
 LIB_PATH=$SCRIPT_PATH"/notemgr-lib"
 
@@ -47,7 +47,7 @@ get_course_selection () {
 # Confirms that the Lecture exists before returning.
 get_lecture_selection () {
 	local LECTURE_LIST
-	LECTURE_LIST=`./notemgr $COURSE_SELECTION`
+	LECTURE_LIST=`$NOTEMGR_PATH $COURSE_SELECTION`
 
 	# If there was an error obtaining the path
 	if [[ $? != 0 ]]; then
@@ -86,6 +86,7 @@ handle_rofi_edit () {
 	get_course_selection
 	get_lecture_selection # Confirms Lecture exists
 	DIRECTORY=$(exec $NOTEMGR_PATH "$COURSE_SELECTION" "$LECTURE_SELECTION")
+	echo "$DIRECTORY"
 
 	if [[ $? != 0 ]]; then
 		rofi -e "$DIRECTORY"
@@ -119,4 +120,4 @@ fi
 
 DIRECTORY=$(echo -n "$DIRECTORY")	# Remove unwanted captured chars
 
-( ./notemgr-open "$DIRECTORY" )
+( $SCRIPT_PATH/notemgr-open "$DIRECTORY" )

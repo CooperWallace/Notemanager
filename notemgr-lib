@@ -12,7 +12,7 @@
 #	DB_PATH	- READONLY Contains the path to the config file
 #	DB_FILE	- READONLY Contains the contents of the Config file
 init_db() {
-	SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
+	SCRIPT_PATH="$(dirname "$(readlink -f "$0")")"
 	readonly DB_PATH="$SCRIPT_PATH/notemgr_db.json"
 
 	if [[ -e "$DB_PATH" ]]; then
