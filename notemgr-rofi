@@ -97,9 +97,25 @@ handle_rofi_edit () {
 	unset COURSE_SELECTION
 }
 
+# Function to compile all files for the chosen lecture
+handle_rofi_output () {
+	get_course_selection
+	DIRECTORY=$(exec $NOTEMGR_PATH -g "$COURSE_SELECTION")
+
+	if [[ $? != 0 ]]; then
+		rofi -e "$DIRECTORY"
+		exit
+	fi
+
+	(
+		cd "$DIRECTORY/Lecture/"
+		pandocOutput
+	)
+}
+
 ################################################################################
 
-MAIN_PROMPT=$(printf "Create\nEdit")
+MAIN_PROMPT=$(printf "Create\nEdit\nRender")
 SEL=$(rofi -dmenu -p "Selection" <<< "$MAIN_PROMPT")
 
 # Database must be initialized
@@ -111,6 +127,9 @@ if [[ $SEL == "Create" ]]; then
 	handle_rofi_create
 elif [[ $SEL == "Edit" ]]; then
 	handle_rofi_edit
+elif [[ $SEL == "Render" ]]; then
+	handle_rofi_output
+	exit
 else
 	rofi -e "Error: The specified options, $SEL, is not valid"
 	exit
