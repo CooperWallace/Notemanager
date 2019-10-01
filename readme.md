@@ -8,6 +8,9 @@ The `notemgr` scripts are to be used as a back-end for managing the notes on a
 system. I plan to implement a `rofi` script or another menu system to
 conveniently use the scripts.
 
+**Note**: Compilation commands, `pandocOutput` and `pandocWatch` can be found
+[Here](https://github.com/CooperWallace/dotfiles/tree/master/.scripts)
+
 # Usage:
 
 ## Note Manager
@@ -75,3 +78,13 @@ used by `notemgr`.
 	- Should follow a "(PREFIX)(Number).(EXT)" scheme
 
 `notemgr-view` - Used to view compiled notes for specific Lecture
+
+
+Compile command: Does one thing, and does it well.
+
+- Compile singular lecture
+	- Flag to open Zathura
+- Compile entire directory
+
+`notemgr-render <IN> <OUT>`
+	- `<OUT>` is default is not specified
