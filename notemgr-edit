@@ -110,7 +110,7 @@ handle_active_course() {
 ################################################################################
 
 # Loading Library for shared functions contained in 'notemgr-lib'
-SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
+SCRIPT_PATH="$(dirname "$(readlink -f "$0")")"
 LIB_PATH="${SCRIPT_PATH}/notemgr-lib"
 
 if [[ -f "${LIB_PATH}" ]]; then
