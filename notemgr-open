@@ -18,8 +18,10 @@ tmux -2 new-session -d -s "$SESSION" -x "$2" -y "$(($1 - 1))"
 tmux selectp -t 0
 tmux send-keys "vim \"$INPUT\"" C-m
 
-# Render function in new Window
+# Attempt to open file and compile it
 tmux new-window -t "$SESSION":2 "pandocWatch \"$INPUT\""
+# Bind Modifier + R to openning a new window and rendering the specified file
+tmux bind R new-window -t "$SESSION":2 "pandocWatch \"$INPUT\""
 
 # Determine if we are running in a terminal or not. Just Attach if we are.
 if [[ -t 0 ]]; then
