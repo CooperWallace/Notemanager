@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+#
+# Auto increment and save figures
+# Obtain the number of the most recent lecture file, obtain the last number of
+# the last created figure for that lecture, and accept a new screenshot at
+# l<d>-fig<d+1>.png
+
+if [[ ! -d "$(pwd)/figures" ]]; then
+	echo "Cannot find subdirectory 'Figures'."
+	exit -1
+fi
+
+# Find the last lecture in the folder
+lastLecture=$(ls Lecture* | sort -V | tail -n1 | grep -o '[0-9]\+')
+lastFig=$(ls figures/l$lastLecture* | grep -o 'fig[0-9]\+' | tail -n1)
+newFigNum=$(( $(grep -o '[0-9]\+' <<< $lastFig) + 1 ))
+
+scrot -s "$(pwd)/figures/l$lastLecture-fig$newFigNum.png"
