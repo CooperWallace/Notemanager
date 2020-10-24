@@ -139,4 +139,10 @@ fi
 
 DIRECTORY=$(echo -n "$DIRECTORY")	# Remove unwanted captured chars
 
-( $SCRIPT_PATH/notemgr-open "$DIRECTORY" )
+
+# Open Terminal if being run through rofi w/ no attached terminal
+if [ -t 1 ] ; then
+	( $SCRIPT_PATH/notemgr-open "$DIRECTORY" )
+else
+	( st $SCRIPT_PATH/notemgr-open "$DIRECTORY" )
+fi
