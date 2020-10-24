@@ -6,13 +6,25 @@
 # l<d>-fig<d+1>.png
 
 if [[ ! -d "$(pwd)/figures" ]]; then
-	echo "Cannot find subdirectory 'Figures'."
+	echo "Cannot find subdirectory 'figures'"
 	exit -1
 fi
 
-# Find the last lecture in the folder
-lastLecture=$(ls Lecture* | sort -V | tail -n1 | grep -o '[0-9]\+')
-lastFig=$(ls figures/l$lastLecture* | grep -o 'fig[0-9]\+' | tail -n1)
-newFigNum=$(( $(grep -o '[0-9]\+' <<< $lastFig) + 1 ))
+# Get the last lecture, and obtain only the lecture number
+lastLecture=$(ls Lecture* | sort -V | tail -n1 | sed -e 's/[^0-9]//g')
 
-scrot -s "$(pwd)/figures/l$lastLecture-fig$newFigNum.png"
+# Get the Number of the last figure, otherwise 1
+lastFig=$(ls figures/l$lastLecture* 2>/dev/null \
+        | sort -V \
+        | grep -o 'fig[0-9]\{1,\}' \
+        | tail -n1 \
+        | tr -d '[[:alpha:]]')
+newFig=$(expr $lastFig + 1)
+
+# Take the screenshot and save to path specified
+scrotStr="$(pwd)/figures/l$lastLecture-fig$newFig.png"
+scrot -s "$scrotStr"
+
+if [[ $? == 0 ]]; then
+	echo "l$lastLecture-fig$newFigNum.png"
+fi
