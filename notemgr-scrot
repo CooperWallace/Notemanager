@@ -22,9 +22,9 @@ lastFig=$(ls figures/l$lastLecture* 2>/dev/null \
 newFig=$(expr $lastFig + 1)
 
 # Take the screenshot and save to path specified
-scrotStr="$(pwd)/figures/l$lastLecture-fig$newFig.png"
+scrotStr="$(pwd)/figures/l$lastLecture-fig$newFig.jpg"
 scrot -s "$scrotStr"
 
 if [[ $? == 0 ]]; then
-	echo "l$lastLecture-fig$newFigNum.png"
+	echo "l$lastLecture-fig$newFig.jpg"
 fi
